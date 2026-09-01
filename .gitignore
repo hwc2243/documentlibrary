@@ -1,0 +1,81 @@
+# ==========================================
+# macOS System Files
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ==========================================
+# Java / Compiled Output
+# ==========================================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Executable log files
+*.log
+
+# ==========================================
+# Eclipse IDE Metadata
+# ==========================================
+# User-specific settings and state
+.metadata
+.recommenders/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# Eclipse project files (uncomment if team members use different IDEs/settings)
+#.project
+#.classpath
+#.settings/
+
+# Eclipse factory path and APT generated code
+.factorypath
+.apt_generated/
+
+# STS / Eclipse plugins
+.springBeans
+
+# ==========================================
+# Maven (If applicable)
+# ==========================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ==========================================
+# Gradle (If applicable)
+# ==========================================
+.gradle/
+build/
+out/
+gradle-app.setting
+.gradletasknamecache
+
+# ==========================================
+# Additional IDEs (VSCode, IntelliJ - for teammates)
+# ==========================================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
