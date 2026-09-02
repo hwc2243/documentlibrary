@@ -62,6 +62,38 @@ public class DocumentLibraryServiceImpl
     }
   }
 
+  @Override
+  public Path getLibraryPath(DocumentLibraryDTO documentLibrary) throws ServiceException {
+    if (documentLibrary == null || documentLibrary.getId() == null) {
+      String message = "A persisted DocumentLibraryDTO with an ID is required to determine its library path.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return Path.of(dlPath, documentLibrary.getId().toString());
+  }
+
+  @Override
+  public DocumentLibraryDTO create(DocumentLibraryDTO documentLibrary) throws ServiceException {
+    DocumentLibraryDTO persistedDocumentLibrary = super.create(documentLibrary);
+    Path libraryPath = getLibraryPath(persistedDocumentLibrary);
+
+    try {
+      Files.createDirectories(libraryPath);
+    }
+    catch (IOException | SecurityException exception) {
+      String message = "Unable to create the document library directory: " + libraryPath;
+
+      logger.error(message, exception);
+
+      throw new ServiceException(message, exception);
+    }
+
+    return persistedDocumentLibrary;
+  }
+
   protected DocumentLibraryEntity toEntity (DocumentLibraryDTO dto) {
     return documentLibraryMapper.toEntity(dto);
   }
