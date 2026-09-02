@@ -1,8 +1,18 @@
 package com.github.hwc2243.documentlibrary.service;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
+import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
+import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFileVersionPersistence;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFileServiceImpl;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +29,137 @@ public class DocumentFileServiceImpl
   
   @Autowired
   protected DocumentFileMapper documentFileMapper;
+
+  @Autowired
+  protected DocumentLibraryService documentLibraryService;
+
+  @Autowired
+  protected DocumentFolderService documentFolderService;
+
+  @Autowired
+  protected DocumentFileVersionPersistence documentFileVersionPersistence;
+
+  @Override
+  public Path getLibraryPath(DocumentFileDTO documentFile) throws ServiceException {
+    if (documentFile == null || documentFile.getId() == null) {
+      String message = "A persisted DocumentFileDTO with an ID is required to determine its library path.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    if (documentFile.getLibrary() == null) {
+      String message = "A DocumentLibraryDTO is required to determine a document file path.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    Path parentPath = documentFile.getParentFolder() == null
+      ? documentLibraryService.getLibraryPath(documentFile.getLibrary())
+      : documentFolderService.getLibraryPath(documentFile.getParentFolder());
+
+    return parentPath.resolve(documentFile.getId().toString());
+  }
+
+  @Override
+  public DocumentFileVersionDTO store (DocumentFileDTO documentFile, byte[] content) throws ServiceException {
+    if (content == null) {
+      String message = "Document file content must not be null.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return store(documentFile, new ByteArrayInputStream(content));
+  }
+
+  @Override
+  public DocumentFileVersionDTO store (DocumentFileDTO documentFile, InputStream content) throws ServiceException {
+    if (content == null) {
+      String message = "Document file content must not be null.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    DocumentFileDTO persistedDocumentFile = ensurePersistedDocumentFile(documentFile);
+    Path fileDirectory = getLibraryPath(documentFile);
+    DocumentFileVersionEntity savedVersion = createVersion(persistedDocumentFile);
+    Path versionPath = fileDirectory.resolve(savedVersion.getId().toString());
+
+    try {
+      Files.createDirectories(fileDirectory);
+      long size = Files.copy(content, versionPath, StandardCopyOption.REPLACE_EXISTING);
+
+      savedVersion.setSize(size);
+      savedVersion = documentFileVersionPersistence.save(savedVersion);
+
+      return toDto(savedVersion, persistedDocumentFile);
+    }
+    catch (IOException | SecurityException exception) {
+      String message = "Unable to store document file version at: " + versionPath;
+
+      logger.error(message, exception);
+      documentFileVersionPersistence.deleteById(savedVersion.getId());
+
+      throw new ServiceException(message, exception);
+    }
+  }
+
+  private DocumentFileDTO ensurePersistedDocumentFile(DocumentFileDTO documentFile) throws ServiceException {
+    if (documentFile == null) {
+      String message = "A DocumentFileDTO is required to store content.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    if (documentFile.getId() != null) {
+      return documentFile;
+    }
+
+    DocumentFileDTO persistedDocumentFile = super.create(documentFile);
+    documentFile.setId(persistedDocumentFile.getId());
+
+    return persistedDocumentFile;
+  }
+
+  private DocumentFileVersionEntity createVersion(DocumentFileDTO documentFile) {
+    Long nextVersion = documentFileVersionPersistence
+      .findTopByDocumentFile_IdOrderByVersionDesc(documentFile.getId())
+      .map(version -> version.getVersion() + 1)
+      .orElse(1L);
+    DocumentFileVersionEntity documentFileVersion = new DocumentFileVersionEntity();
+
+    documentFileVersion.setDocumentFile(documentFilePersistence.getReferenceById(documentFile.getId()));
+    documentFileVersion.setVersion(nextVersion);
+    documentFileVersion.setMimeType(documentFile.getMimeType());
+    documentFileVersion.setCreateDate(LocalDateTime.now());
+
+    return documentFileVersionPersistence.save(documentFileVersion);
+  }
+
+  private DocumentFileVersionDTO toDto(
+    DocumentFileVersionEntity documentFileVersion,
+    DocumentFileDTO documentFile
+  ) {
+    DocumentFileVersionDTO dto = new DocumentFileVersionDTO();
+
+    dto.setId(documentFileVersion.getId());
+    dto.setVersion(documentFileVersion.getVersion());
+    dto.setSize(documentFileVersion.getSize());
+    dto.setMimeType(documentFileVersion.getMimeType());
+    dto.setCreateDate(documentFileVersion.getCreateDate());
+    dto.setDocumentFile(documentFile);
+
+    return dto;
+  }
   
   protected DocumentFileEntity toEntity (DocumentFileDTO dto) {
     return documentFileMapper.toEntity(dto);
