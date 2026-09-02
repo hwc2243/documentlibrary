@@ -1,4 +1,4 @@
-<service name="documentlibrary" package="com.github.hwc2243">
+<service name="documentlibrary" package="com.github.hwc2243.documentlibrary">
     <entity name="documentLibrary">
         <attribute name="name" type="string" />
         
