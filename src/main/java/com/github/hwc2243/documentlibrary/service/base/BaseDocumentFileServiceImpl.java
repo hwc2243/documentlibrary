@@ -15,7 +15,7 @@ public abstract class BaseDocumentFileServiceImpl<D extends DocumentFileDTO, E e
   implements BaseDocumentFileService<D, ID> {
 
   @Autowired
-  private BaseDocumentFilePersistence<E,ID> baseDocumentFilePersistence;
+  private BaseDocumentFilePersistence<E, ID> baseDocumentFilePersistence;
   
   @Autowired
   protected DocumentFilePersistence documentFilePersistence;

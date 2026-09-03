@@ -16,7 +16,7 @@ public abstract class BaseDocumentFileVersionServiceImpl<D extends DocumentFileV
   implements BaseDocumentFileVersionService<D, ID> {
 
   @Autowired
-  private BaseDocumentFileVersionPersistence<E,ID> baseDocumentFileVersionPersistence;
+  private BaseDocumentFileVersionPersistence<E, ID> baseDocumentFileVersionPersistence;
   
   @Autowired
   protected DocumentFileVersionPersistence documentFileVersionPersistence;

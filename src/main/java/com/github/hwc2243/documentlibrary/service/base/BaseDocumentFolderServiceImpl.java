@@ -15,7 +15,7 @@ public abstract class BaseDocumentFolderServiceImpl<D extends DocumentFolderDTO,
   implements BaseDocumentFolderService<D, ID> {
 
   @Autowired
-  private BaseDocumentFolderPersistence<E,ID> baseDocumentFolderPersistence;
+  private BaseDocumentFolderPersistence<E, ID> baseDocumentFolderPersistence;
   
   @Autowired
   protected DocumentFolderPersistence documentFolderPersistence;

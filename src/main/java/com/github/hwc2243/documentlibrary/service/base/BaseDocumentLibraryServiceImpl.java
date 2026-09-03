@@ -15,7 +15,7 @@ public abstract class BaseDocumentLibraryServiceImpl<D extends DocumentLibraryDT
   implements BaseDocumentLibraryService<D, ID> {
 
   @Autowired
-  private BaseDocumentLibraryPersistence<E,ID> baseDocumentLibraryPersistence;
+  private BaseDocumentLibraryPersistence<E, ID> baseDocumentLibraryPersistence;
   
   @Autowired
   protected DocumentLibraryPersistence documentLibraryPersistence;
