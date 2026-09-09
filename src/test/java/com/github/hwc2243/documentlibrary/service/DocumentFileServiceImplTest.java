@@ -2,6 +2,7 @@ package com.github.hwc2243.documentlibrary.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
@@ -13,6 +14,7 @@ import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFilePersistence;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFileVersionPersistence;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -97,6 +99,65 @@ class DocumentFileServiceImplTest {
     assertArrayEquals(firstContent, Files.readAllBytes(fileDirectory.resolve("40")));
     assertArrayEquals(secondContent, Files.readAllBytes(fileDirectory.resolve("41")));
     assertTrue(Files.isDirectory(fileDirectory));
+  }
+
+  @Test
+  void loadReturnsInputStreamForLatestStoredVersion() throws Exception {
+    DocumentLibraryDTO documentLibrary = new DocumentLibraryDTO();
+    documentLibrary.setId(10L);
+    DocumentFolderDTO documentFolder = new DocumentFolderDTO();
+    documentFolder.setId(20L);
+    documentFolder.setLibrary(documentLibrary);
+    DocumentFileDTO documentFile = new DocumentFileDTO();
+    documentFile.setId(30L);
+    documentFile.setLibrary(documentLibrary);
+    documentFile.setParentFolder(documentFolder);
+    DocumentFileVersionEntity latestVersion = new DocumentFileVersionEntity();
+    latestVersion.setId(40L);
+    latestVersion.setVersion(2L);
+    byte[] expectedContent = "latest version".getBytes(StandardCharsets.UTF_8);
+    Path versionPath = temporaryDirectory.resolve("10/20/30/40");
+    Files.createDirectories(versionPath.getParent());
+    Files.write(versionPath, expectedContent);
+    DocumentFileServiceImpl service = new DocumentFileServiceImpl();
+    service.documentLibraryService = libraryService();
+    service.documentFolderService = folderService();
+    service.documentFileVersionPersistence = latestVersionPersistence(latestVersion);
+
+    try (InputStream content = service.load(documentFile)) {
+      assertArrayEquals(expectedContent, content.readAllBytes());
+    }
+  }
+
+  @Test
+  void loadThrowsWhenNoStoredVersionExists() {
+    DocumentLibraryDTO documentLibrary = new DocumentLibraryDTO();
+    documentLibrary.setId(10L);
+    DocumentFileDTO documentFile = new DocumentFileDTO();
+    documentFile.setId(30L);
+    documentFile.setLibrary(documentLibrary);
+    DocumentFileServiceImpl service = new DocumentFileServiceImpl();
+    service.documentLibraryService = libraryService();
+    service.documentFolderService = folderService();
+    service.documentFileVersionPersistence = latestVersionPersistence(null);
+
+    ServiceException exception = assertThrows(ServiceException.class, () -> service.load(documentFile));
+
+    assertTrue(exception.getMessage().contains("No stored versions exist"));
+  }
+
+  private DocumentFileVersionPersistence latestVersionPersistence(DocumentFileVersionEntity latestVersion) {
+    return (DocumentFileVersionPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFileVersionPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findTopByDocumentFile_IdOrderByVersionDesc")) {
+          return Optional.ofNullable(latestVersion);
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
   }
 
   private DocumentLibraryService libraryService() {

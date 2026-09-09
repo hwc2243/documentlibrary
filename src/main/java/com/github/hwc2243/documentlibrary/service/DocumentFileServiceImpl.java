@@ -111,6 +111,62 @@ public class DocumentFileServiceImpl
     }
   }
 
+  @Override
+  public InputStream load(DocumentFileDTO documentFile) throws ServiceException {
+    DocumentFileVersionEntity latestVersion = documentFileVersionPersistence
+      .findTopByDocumentFile_IdOrderByVersionDesc(requireDocumentFileId(documentFile))
+      .orElseThrow(() -> fileNotFound(documentFile));
+
+    if (latestVersion.getId() == null) {
+      String message = "The latest document file version does not have an ID.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    Path versionPath = getLibraryPath(documentFile).resolve(latestVersion.getId().toString());
+
+    if (!Files.isRegularFile(versionPath)) {
+      String message = "The stored document file version does not exist: " + versionPath;
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    try {
+      return Files.newInputStream(versionPath);
+    }
+    catch (IOException | SecurityException exception) {
+      String message = "Unable to load document file version: " + versionPath;
+
+      logger.error(message, exception);
+
+      throw new ServiceException(message, exception);
+    }
+  }
+
+  private Long requireDocumentFileId(DocumentFileDTO documentFile) throws ServiceException {
+    if (documentFile == null || documentFile.getId() == null) {
+      String message = "A persisted DocumentFileDTO with an ID is required to load content.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return documentFile.getId();
+  }
+
+  private ServiceException fileNotFound(DocumentFileDTO documentFile) {
+    String message = "No stored versions exist for document file ID: " + documentFile.getId();
+
+    logger.error(message);
+
+    return new ServiceException(message);
+  }
+
   private DocumentFileDTO ensurePersistedDocumentFile(DocumentFileDTO documentFile) throws ServiceException {
     if (documentFile == null) {
       String message = "A DocumentFileDTO is required to store content.";

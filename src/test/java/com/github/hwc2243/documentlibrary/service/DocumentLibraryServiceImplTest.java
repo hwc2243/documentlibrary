@@ -140,6 +140,64 @@ class DocumentLibraryServiceImplTest {
     assertEquals(documentLibraryEntity, savedEntity[0]);
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  void fetchByNameReturnsMatchingDocumentLibrary() {
+    DocumentLibraryEntity documentLibraryEntity = new DocumentLibraryEntity();
+    DocumentLibraryDTO expectedDocumentLibrary = new DocumentLibraryDTO();
+    expectedDocumentLibrary.setId(42L);
+    String[] requestedName = new String[1];
+    BaseDocumentLibraryPersistence<DocumentLibraryEntity, Long> persistence =
+      (BaseDocumentLibraryPersistence<DocumentLibraryEntity, Long>) Proxy.newProxyInstance(
+        getClass().getClassLoader(),
+        new Class<?>[] { BaseDocumentLibraryPersistence.class },
+        (proxy, method, arguments) -> {
+          if (method.getName().equals("findFirstByName")) {
+            requestedName[0] = (String) arguments[0];
+            return documentLibraryEntity;
+          }
+
+          throw new UnsupportedOperationException(method.getName());
+        }
+      );
+    TestDocumentLibraryService service = new TestDocumentLibraryService(
+      documentLibraryEntity,
+      expectedDocumentLibrary
+    );
+    ReflectionTestUtils.setField(service, "baseDocumentLibraryPersistence", persistence);
+
+    DocumentLibraryDTO documentLibrary = service.fetchByName("records");
+
+    assertEquals(expectedDocumentLibrary, documentLibrary);
+    assertEquals("records", requestedName[0]);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void fetchByNameReturnsNullWhenNoDocumentLibraryMatches() {
+    BaseDocumentLibraryPersistence<DocumentLibraryEntity, Long> persistence =
+      (BaseDocumentLibraryPersistence<DocumentLibraryEntity, Long>) Proxy.newProxyInstance(
+        getClass().getClassLoader(),
+        new Class<?>[] { BaseDocumentLibraryPersistence.class },
+        (proxy, method, arguments) -> {
+          if (method.getName().equals("findFirstByName")) {
+            return null;
+          }
+
+          throw new UnsupportedOperationException(method.getName());
+        }
+      );
+    TestDocumentLibraryService service = new TestDocumentLibraryService(
+      new DocumentLibraryEntity(),
+      new DocumentLibraryDTO()
+    );
+    ReflectionTestUtils.setField(service, "baseDocumentLibraryPersistence", persistence);
+
+    DocumentLibraryDTO documentLibrary = service.fetchByName("missing");
+
+    assertEquals(null, documentLibrary);
+  }
+
   private static final class TestDocumentLibraryService extends DocumentLibraryServiceImpl {
 
     private final DocumentLibraryEntity entity;
@@ -160,7 +218,7 @@ class DocumentLibraryServiceImplTest {
 
     @Override
     protected DocumentLibraryDTO toDto(DocumentLibraryEntity entity) {
-      return persistedDocumentLibrary;
+      return entity == null ? null : persistedDocumentLibrary;
     }
   }
 }

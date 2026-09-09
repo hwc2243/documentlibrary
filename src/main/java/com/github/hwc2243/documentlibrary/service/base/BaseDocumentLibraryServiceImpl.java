@@ -42,6 +42,12 @@ public abstract class BaseDocumentLibraryServiceImpl<D extends DocumentLibraryDT
   }
 
   @Override
+  public D fetchByName (String name)
+  {
+	return toDto(baseDocumentLibraryPersistence.findFirstByName(name));
+  }
+
+  @Override
   public D get (ID id) throws ServiceException
   {
     Optional<E> optional = baseDocumentLibraryPersistence.findById(id);

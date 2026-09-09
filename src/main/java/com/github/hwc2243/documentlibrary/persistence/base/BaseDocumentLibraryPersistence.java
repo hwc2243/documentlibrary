@@ -12,4 +12,7 @@ import org.springframework.data.repository.NoRepositoryBean;
 public interface BaseDocumentLibraryPersistence<E extends DocumentLibraryEntity, ID> extends JpaRepository<E, ID>
 {
 
+
+    public E findFirstByName(String name);
+
 }
