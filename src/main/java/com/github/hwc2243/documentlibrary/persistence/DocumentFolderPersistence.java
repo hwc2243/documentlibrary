@@ -5,4 +5,5 @@ import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentFolderPer
 
 public interface DocumentFolderPersistence extends BaseDocumentFolderPersistence<DocumentFolderEntity,Long>
 {
-} 
+  DocumentFolderEntity findFirstByName(String name);
+}

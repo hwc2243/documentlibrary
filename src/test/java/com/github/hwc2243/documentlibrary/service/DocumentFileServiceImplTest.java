@@ -11,6 +11,7 @@ import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
+import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFilePersistence;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFileVersionPersistence;
 import java.io.ByteArrayInputStream;
@@ -146,6 +147,45 @@ class DocumentFileServiceImplTest {
     assertTrue(exception.getMessage().contains("No stored versions exist"));
   }
 
+  @Test
+  void fetchByNameReturnsFileWhenObjectTypeIsFile() throws ServiceException {
+    DocumentFileEntity entity = new DocumentFileEntity();
+    entity.setObjectType(DocumentObjectObjectType.FILE);
+    DocumentFileDTO expectedFile = new DocumentFileDTO();
+    TestDocumentFileService service = new TestDocumentFileService(expectedFile);
+    ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
+
+    DocumentFileDTO documentFile = service.fetchByName("notes");
+
+    assertEquals(expectedFile, documentFile);
+  }
+
+  @Test
+  void fetchByNameRejectsFileWithFolderObjectType() {
+    DocumentFileEntity entity = new DocumentFileEntity();
+    entity.setObjectType(DocumentObjectObjectType.FOLDER);
+    TestDocumentFileService service = new TestDocumentFileService(new DocumentFileDTO());
+    ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
+
+    ServiceException exception = assertThrows(ServiceException.class, () -> service.fetchByName("notes"));
+
+    assertTrue(exception.getMessage().contains("not a file"));
+  }
+
+  private DocumentFilePersistence filePersistence(DocumentFileEntity entity) {
+    return (DocumentFilePersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFilePersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findFirstByName")) {
+          return entity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+  }
+
   private DocumentFileVersionPersistence latestVersionPersistence(DocumentFileVersionEntity latestVersion) {
     return (DocumentFileVersionPersistence) Proxy.newProxyInstance(
       getClass().getClassLoader(),
@@ -174,5 +214,19 @@ class DocumentFileServiceImplTest {
       new Class<?>[] { DocumentFolderService.class },
       (proxy, method, arguments) -> temporaryDirectory.resolve("10/20")
     );
+  }
+
+  private static final class TestDocumentFileService extends DocumentFileServiceImpl {
+
+    private final DocumentFileDTO documentFile;
+
+    private TestDocumentFileService(DocumentFileDTO documentFile) {
+      this.documentFile = documentFile;
+    }
+
+    @Override
+    protected DocumentFileDTO toDto(DocumentFileEntity entity) {
+      return documentFile;
+    }
   }
 }

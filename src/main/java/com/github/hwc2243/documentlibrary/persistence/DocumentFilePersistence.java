@@ -5,4 +5,5 @@ import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentFilePersi
 
 public interface DocumentFilePersistence extends BaseDocumentFilePersistence<DocumentFileEntity,Long>
 {
-} 
+  DocumentFileEntity findFirstByName(String name);
+}

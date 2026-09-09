@@ -6,5 +6,7 @@ import java.nio.file.Path;
 
 public interface DocumentFolderService extends BaseDocumentFolderService<DocumentFolderDTO,Long>
 {
+  DocumentFolderDTO fetchByName(String name) throws ServiceException;
+
   Path getLibraryPath(DocumentFolderDTO documentFolder) throws ServiceException;
 }

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
+import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
 import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentFolderPersistence;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
@@ -83,6 +85,45 @@ class DocumentFolderServiceImplTest {
     assertEquals(30L, requestedFolder.getId());
     assertEquals(documentFolderEntity, savedEntity[0]);
     assertTrue(Files.isDirectory(temporaryDirectory.resolve("10/20/30")));
+  }
+
+  @Test
+  void fetchByNameReturnsFolderWhenObjectTypeIsFolder() throws ServiceException {
+    DocumentFolderEntity entity = new DocumentFolderEntity();
+    entity.setObjectType(DocumentObjectObjectType.FOLDER);
+    DocumentFolderDTO expectedFolder = new DocumentFolderDTO();
+    TestDocumentFolderService service = new TestDocumentFolderService(entity, expectedFolder);
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence(entity));
+
+    DocumentFolderDTO documentFolder = service.fetchByName("records");
+
+    assertEquals(expectedFolder, documentFolder);
+  }
+
+  @Test
+  void fetchByNameRejectsFolderWithFileObjectType() {
+    DocumentFolderEntity entity = new DocumentFolderEntity();
+    entity.setObjectType(DocumentObjectObjectType.FILE);
+    TestDocumentFolderService service = new TestDocumentFolderService(entity, new DocumentFolderDTO());
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence(entity));
+
+    ServiceException exception = assertThrows(ServiceException.class, () -> service.fetchByName("records"));
+
+    assertTrue(exception.getMessage().contains("not a folder"));
+  }
+
+  private DocumentFolderPersistence folderPersistence(DocumentFolderEntity entity) {
+    return (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findFirstByName")) {
+          return entity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
   }
 
   private DocumentLibraryService documentLibraryService() {

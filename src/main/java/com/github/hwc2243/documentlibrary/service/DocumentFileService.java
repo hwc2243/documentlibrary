@@ -8,6 +8,8 @@ import java.nio.file.Path;
 
 public interface DocumentFileService extends BaseDocumentFileService<DocumentFileDTO,Long>
 {
+  DocumentFileDTO fetchByName(String name) throws ServiceException;
+
   Path getLibraryPath(DocumentFileDTO documentFile) throws ServiceException;
 
   DocumentFileVersionDTO store(DocumentFileDTO documentFile, byte[] content) throws ServiceException;

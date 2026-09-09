@@ -2,6 +2,7 @@ package com.github.hwc2243.documentlibrary.service;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
+import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFolderServiceImpl;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +30,25 @@ public class DocumentFolderServiceImpl
 
   @Autowired
   protected DocumentLibraryService documentLibraryService;
+
+  @Override
+  public DocumentFolderDTO fetchByName(String name) throws ServiceException {
+    DocumentFolderEntity documentFolder = documentFolderPersistence.findFirstByName(name);
+
+    if (documentFolder == null) {
+      return null;
+    }
+
+    if (documentFolder.getObjectType() != DocumentObjectObjectType.FOLDER) {
+      String message = "Document object named '" + name + "' is not a folder.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return toDto(documentFolder);
+  }
 
   @Override
   public Path getLibraryPath(DocumentFolderDTO documentFolder) throws ServiceException {

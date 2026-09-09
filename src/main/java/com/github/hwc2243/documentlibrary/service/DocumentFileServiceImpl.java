@@ -4,6 +4,7 @@ import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
+import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFileVersionPersistence;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFileServiceImpl;
 import java.io.ByteArrayInputStream;
@@ -38,6 +39,25 @@ public class DocumentFileServiceImpl
 
   @Autowired
   protected DocumentFileVersionPersistence documentFileVersionPersistence;
+
+  @Override
+  public DocumentFileDTO fetchByName(String name) throws ServiceException {
+    DocumentFileEntity documentFile = documentFilePersistence.findFirstByName(name);
+
+    if (documentFile == null) {
+      return null;
+    }
+
+    if (documentFile.getObjectType() != DocumentObjectObjectType.FILE) {
+      String message = "Document object named '" + name + "' is not a file.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return toDto(documentFile);
+  }
 
   @Override
   public Path getLibraryPath(DocumentFileDTO documentFile) throws ServiceException {
