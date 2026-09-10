@@ -12,4 +12,7 @@ import org.springframework.data.repository.NoRepositoryBean;
 public interface BaseDocumentFileVersionPersistence<E extends DocumentFileVersionEntity, ID> extends JpaRepository<E, ID>
 {
 
+
+    public List<E> findByDocumentFileId(Long documentFileId);
+
 }

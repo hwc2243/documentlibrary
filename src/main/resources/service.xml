@@ -37,13 +37,6 @@
     <entity name="documentFile" parent="documentObject">
         <attribute name="size" type="long" />
         <attribute name="mimeType" type="string" />
-
-        <related name="versions" 
-                 entity="documentFileVersion" 
-                 relationship="one_to_many" 
-                 collection="list" 
-                 mapped-by="documentFile" />
-                 
     </entity>
 
     <entity name="documentFileVersion">
@@ -54,7 +47,10 @@
         
         <related name="documentFile" 
                  entity="documentFile" 
-                 relationship="many_to_one" 
-                 bidirectional="true" />
+                 relationship="many_to_one"/>
+                 
+        <finder>
+        	<finder-attribute name="documentFile" />
+        </finder>
     </entity>
 </service>

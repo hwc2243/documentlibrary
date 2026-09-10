@@ -4,7 +4,6 @@ package com.github.hwc2243.documentlibrary.dto.base;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.hwc2243.documentlibrary.dto.base.BaseDocumentObjectDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
-import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentFile;
@@ -15,7 +14,7 @@ import java.util.Set;
 
 public abstract class BaseDocumentFileDTO
 extends BaseDocumentObjectDTO
-implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileVersionDTO>,  Serializable
+implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO>,  Serializable
 {
   protected Long id = null;
 
@@ -23,8 +22,6 @@ implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileV
   
   protected String mimeType = null;
   
-  protected List<DocumentFileVersionDTO> versions;
-
 
   protected BaseDocumentFileDTO () {
   }
@@ -35,7 +32,6 @@ implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileV
     this.id = builder.id;
     this.size = builder.size;
     this.mimeType = builder.mimeType;
-    this.versions = builder.versions;
   }
 
   public Long getId ()
@@ -71,16 +67,6 @@ implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileV
   }
   
 
-  public List<DocumentFileVersionDTO> getVersions ()
-  {
-    return this.versions;
-  }
-  
-  public void setVersions (List<DocumentFileVersionDTO> versions)
-  {
-    this.versions = versions;
-  }
-
 
     @Override
 	public int hashCode() {
@@ -109,7 +95,6 @@ implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileV
   private String mimeType = null;
   
 
-    private List<DocumentFileVersionDTO> versions = null;
 
     public Builder id(Long id) {
       this.id = id;
@@ -126,10 +111,6 @@ implements BaseDocumentFile<DocumentLibraryDTO, DocumentFolderDTO, DocumentFileV
       return this;
     }
 
-    public Builder versions(List<DocumentFileVersionDTO> versions) {
-      this.versions = versions;
-      return this;
-    }
     /**
      * The build method creates and returns the immutable Entity object.
      */

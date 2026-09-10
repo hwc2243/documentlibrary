@@ -7,7 +7,6 @@ import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
 import java.util.List;
-import java.util.Set;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -32,7 +31,6 @@ public interface DocumentFileVersionMapper {
   @Named("documentFileDefault")
   @Mapping(target = "library", ignore = true)
   @Mapping(target = "parentFolder", ignore = true)
-  @Mapping(target = "versions", ignore = true)
   DocumentFileDTO documentFileToDto(
       DocumentFileEntity entity
   );

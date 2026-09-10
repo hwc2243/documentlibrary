@@ -159,6 +159,7 @@ class DocumentFileServiceImplTest {
     DocumentFileEntity entity = new DocumentFileEntity();
     entity.setObjectType(DocumentObjectObjectType.FILE);
     DocumentFileDTO expectedFile = new DocumentFileDTO();
+    expectedFile.setId(30L);
     TestDocumentFileService service = new TestDocumentFileService(expectedFile);
     ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
 
@@ -166,6 +167,8 @@ class DocumentFileServiceImplTest {
     DocumentFileDTO documentFile = service.fetchByName("notes", parentFolder);
 
     assertEquals(expectedFile, documentFile);
+    assertEquals(10L, documentFile.getLibrary().getId());
+    assertEquals(20L, documentFile.getParentFolder().getId());
   }
 
   @Test
@@ -187,6 +190,7 @@ class DocumentFileServiceImplTest {
   void findFilesUsesTheParentFoldersLibraryAndId() throws ServiceException {
     DocumentFileEntity entity = new DocumentFileEntity();
     DocumentFileDTO expectedFile = new DocumentFileDTO();
+    expectedFile.setId(30L);
     Long[] finderArguments = new Long[2];
     TestDocumentFileService service = new TestDocumentFileService(expectedFile);
     ReflectionTestUtils.setField(
@@ -198,6 +202,9 @@ class DocumentFileServiceImplTest {
     List<DocumentFileDTO> files = service.findFiles(parentFolder());
 
     assertEquals(List.of(expectedFile), files);
+    assertEquals(10L, files.get(0).getLibrary().getId());
+    assertEquals(20L, files.get(0).getParentFolder().getId());
+    assertEquals(10L, files.get(0).getParentFolder().getLibrary().getId());
     assertEquals(10L, finderArguments[0]);
     assertEquals(20L, finderArguments[1]);
   }

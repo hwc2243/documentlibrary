@@ -2,7 +2,6 @@ package com.github.hwc2243.documentlibrary.entity.base;
 
 
 import com.github.hwc2243.documentlibrary.entity.base.BaseDocumentObjectEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentFile;
@@ -34,7 +33,7 @@ import java.util.Set;
 @MappedSuperclass
 public abstract class BaseDocumentFileEntity<T extends BaseDocumentFileEntity<T>>
   extends BaseDocumentObjectEntity<T>
-    implements BaseDocumentFile<DocumentLibraryEntity, DocumentFolderEntity, DocumentFileVersionEntity>, Serializable
+    implements BaseDocumentFile<DocumentLibraryEntity, DocumentFolderEntity>, Serializable
 {
   @Id
   @Column
@@ -48,9 +47,6 @@ public abstract class BaseDocumentFileEntity<T extends BaseDocumentFileEntity<T>
   protected String mimeType = null;
   
 
-  @OneToMany(mappedBy = "documentFile", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-  protected List<DocumentFileVersionEntity> versions;
-  
   
   public Long getId ()
   {
@@ -89,17 +85,6 @@ public abstract class BaseDocumentFileEntity<T extends BaseDocumentFileEntity<T>
     this.mimeType = mimeType;
   }
   
-
-  public List<DocumentFileVersionEntity> getVersions ()
-  {
-    return this.versions;
-  }
-  
-  public void setVersions (List<DocumentFileVersionEntity> versions)
-  {
-    this.versions = versions;
-  }
-
 
 
     @Override

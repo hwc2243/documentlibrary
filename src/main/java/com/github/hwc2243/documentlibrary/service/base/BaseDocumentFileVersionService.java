@@ -6,4 +6,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BaseDocumentFileVersionService<D extends BaseDocumentFileVersionDTO, ID> extends EntityService<D, ID> {
+
+	public List<D> findByDocumentFileId (Long documentFileId);
 }

@@ -42,6 +42,12 @@ public abstract class BaseDocumentFileVersionServiceImpl<D extends DocumentFileV
     return toDtos(entities);
   }
 
+  @Override
+  public List<D> findByDocumentFileId (Long documentFileId)
+  {
+	return toDtos(baseDocumentFileVersionPersistence.findByDocumentFileId(documentFileId));
+  }
+
 
   @Override
   public D get (ID id) throws ServiceException

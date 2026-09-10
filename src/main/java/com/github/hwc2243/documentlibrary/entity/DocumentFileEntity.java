@@ -2,7 +2,6 @@ package com.github.hwc2243.documentlibrary.entity;
 
 
 import com.github.hwc2243.documentlibrary.entity.base.BaseDocumentFileEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentFile;
@@ -17,7 +16,7 @@ import java.io.Serializable;
 @Table(name="documentFile")
 public class DocumentFileEntity
     extends BaseDocumentFileEntity<DocumentFileEntity>
-    implements DocumentFile<DocumentLibraryEntity, DocumentFolderEntity, DocumentFileVersionEntity>, Serializable
+    implements DocumentFile<DocumentLibraryEntity, DocumentFolderEntity>, Serializable
 {
 	public DocumentFileEntity ()
 	{

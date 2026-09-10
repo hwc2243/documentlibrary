@@ -3,6 +3,7 @@ package com.github.hwc2243.documentlibrary.service;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
+import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
@@ -86,7 +87,10 @@ public class DocumentFileServiceImpl
       throw new ServiceException(message);
     }
 
-    return toDto(documentFile);
+    DocumentFileDTO dto = toDto(documentFile);
+    setRelationshipReferences(dto, parentFolder.getLibrary().getId(), parentFolder.getId());
+
+    return dto;
   }
 
   @Override
@@ -107,10 +111,16 @@ public class DocumentFileServiceImpl
       throw new ServiceException(message);
     }
 
-    return toDtos(documentFilePersistence.findByLibraryIdAndParentFolderId(
+    List<DocumentFileDTO> documentFiles = toDtos(documentFilePersistence.findByLibraryIdAndParentFolderId(
       parentFolder.getLibrary().getId(),
       parentFolder.getId()
     ));
+
+    for (DocumentFileDTO documentFile : documentFiles) {
+      setRelationshipReferences(documentFile, parentFolder.getLibrary().getId(), parentFolder.getId());
+    }
+
+    return documentFiles;
   }
 
   @Override
@@ -386,10 +396,46 @@ public class DocumentFileServiceImpl
   }
 
   protected DocumentFileDTO toDto (DocumentFileEntity entity) {
-    return documentFileMapper.toDto(entity);
+    if (entity == null) {
+      return null;
+    }
+
+    DocumentFileDTO documentFile = documentFileMapper.toDto(entity);
+
+    Long libraryId = entity.getLibrary() == null ? null : entity.getLibrary().getId();
+    Long parentFolderId = entity.getParentFolder() == null ? null : entity.getParentFolder().getId();
+
+    setRelationshipReferences(documentFile, libraryId, parentFolderId);
+
+    return documentFile;
   }
   
   protected List<DocumentFileDTO> toDtos (List<DocumentFileEntity> entities) {
-    return documentFileMapper.toDtos(entities);
+    return entities.stream().map(this::toDto).toList();
+  }
+
+  private void setRelationshipReferences(
+    DocumentFileDTO documentFile,
+    Long libraryId,
+    Long parentFolderId
+  ) {
+    if (libraryId != null) {
+      DocumentLibraryDTO library = new DocumentLibraryDTO();
+      library.setId(libraryId);
+      documentFile.setLibrary(library);
+    }
+
+    if (parentFolderId != null) {
+      DocumentFolderDTO parentFolder = new DocumentFolderDTO();
+      parentFolder.setId(parentFolderId);
+
+      if (libraryId != null) {
+        DocumentLibraryDTO library = new DocumentLibraryDTO();
+        library.setId(libraryId);
+        parentFolder.setLibrary(library);
+      }
+
+      documentFile.setParentFolder(parentFolder);
+    }
   }
 }
