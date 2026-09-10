@@ -200,6 +200,7 @@ class DocumentFolderServiceImplTest {
   void findFoldersUsesLibraryAndNullParentForRootFolders() throws ServiceException {
     DocumentFolderEntity entity = new DocumentFolderEntity();
     DocumentFolderDTO expectedFolder = new DocumentFolderDTO();
+    expectedFolder.setId(30L);
     Long[] finderArguments = new Long[2];
     TestDocumentFolderService service = new TestDocumentFolderService(entity, expectedFolder);
     ReflectionTestUtils.setField(
@@ -211,8 +212,14 @@ class DocumentFolderServiceImplTest {
     List<DocumentFolderDTO> folders = service.findFolders(documentLibrary(10L), null);
 
     assertEquals(List.of(expectedFolder), folders);
+    assertEquals(10L, folders.get(0).getLibrary().getId());
     assertEquals(10L, finderArguments[0]);
     assertEquals(null, finderArguments[1]);
+
+    service.findFolders(null, folders.get(0));
+
+    assertEquals(10L, finderArguments[0]);
+    assertEquals(30L, finderArguments[1]);
   }
 
   @Test

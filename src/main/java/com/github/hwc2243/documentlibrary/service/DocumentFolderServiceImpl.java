@@ -76,10 +76,18 @@ public class DocumentFolderServiceImpl
     Long libraryId = resolveLibraryId(documentLibrary, parentFolder);
     Long parentFolderId = parentFolder == null ? null : parentFolder.getId();
 
-    return toDtos(documentFolderPersistence.findByLibraryIdAndParentFolderId(
+    List<DocumentFolderDTO> documentFolders = toDtos(documentFolderPersistence.findByLibraryIdAndParentFolderId(
       libraryId,
       parentFolderId
     ));
+
+    for (DocumentFolderDTO documentFolder : documentFolders) {
+      DocumentLibraryDTO library = new DocumentLibraryDTO();
+      library.setId(libraryId);
+      documentFolder.setLibrary(library);
+    }
+
+    return documentFolders;
   }
 
   private Long resolveLibraryId(DocumentLibraryDTO documentLibrary, DocumentFolderDTO parentFolder)
