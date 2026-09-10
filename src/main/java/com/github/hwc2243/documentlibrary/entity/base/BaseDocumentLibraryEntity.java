@@ -1,7 +1,6 @@
 package com.github.hwc2243.documentlibrary.entity.base;
 
 
-import com.github.hwc2243.documentlibrary.entity.DocumentObjectEntity;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentLibrary;
 import com.github.hwc2243.documentlibrary.model.DocumentLibrary;
 import jakarta.persistence.CascadeType;
@@ -30,7 +29,7 @@ import java.util.Set;
 
 @MappedSuperclass
 public abstract class BaseDocumentLibraryEntity<T extends BaseDocumentLibraryEntity<T>> extends AbstractBaseEntity
-    implements BaseDocumentLibrary<DocumentObjectEntity>, Serializable
+    implements BaseDocumentLibrary, Serializable
 {
   @Id
   @Column
@@ -41,9 +40,6 @@ public abstract class BaseDocumentLibraryEntity<T extends BaseDocumentLibraryEnt
   protected String name = null;
   
 
-  @OneToMany(mappedBy = "library", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-  protected List<DocumentObjectEntity> objects;
-  
   
   public Long getId ()
   {
@@ -71,17 +67,6 @@ public abstract class BaseDocumentLibraryEntity<T extends BaseDocumentLibraryEnt
     this.name = name;
   }
   
-
-  public List<DocumentObjectEntity> getObjects ()
-  {
-    return this.objects;
-  }
-  
-  public void setObjects (List<DocumentObjectEntity> objects)
-  {
-    this.objects = objects;
-  }
-
 
 
     @Override

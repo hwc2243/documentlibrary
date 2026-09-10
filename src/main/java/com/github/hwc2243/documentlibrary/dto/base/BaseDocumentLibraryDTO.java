@@ -3,7 +3,6 @@ package com.github.hwc2243.documentlibrary.dto.base;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
-import com.github.hwc2243.documentlibrary.dto.DocumentObjectDTO;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentLibrary;
 import java.io.Serializable;
 import java.util.List;
@@ -11,14 +10,12 @@ import java.util.Objects;
 import java.util.Set;
 
 public abstract class BaseDocumentLibraryDTO
-implements BaseDocumentLibrary<DocumentObjectDTO>,  Serializable
+implements BaseDocumentLibrary,  Serializable
 {
   protected Long id = null;
 
   protected String name = null;
   
-  protected List<DocumentObjectDTO> objects;
-
 
   protected BaseDocumentLibraryDTO () {
   }
@@ -28,7 +25,6 @@ implements BaseDocumentLibrary<DocumentObjectDTO>,  Serializable
   {
     this.id = builder.id;
     this.name = builder.name;
-    this.objects = builder.objects;
   }
 
   public Long getId ()
@@ -52,16 +48,6 @@ implements BaseDocumentLibrary<DocumentObjectDTO>,  Serializable
     this.name = name;
   }
   
-
-  public List<DocumentObjectDTO> getObjects ()
-  {
-    return this.objects;
-  }
-  
-  public void setObjects (List<DocumentObjectDTO> objects)
-  {
-    this.objects = objects;
-  }
 
 
     @Override
@@ -89,7 +75,6 @@ implements BaseDocumentLibrary<DocumentObjectDTO>,  Serializable
   private String name = null;
   
 
-    private List<DocumentObjectDTO> objects = null;
 
     public Builder id(Long id) {
       this.id = id;
@@ -101,10 +86,6 @@ implements BaseDocumentLibrary<DocumentObjectDTO>,  Serializable
       return this;
     }
 
-    public Builder objects(List<DocumentObjectDTO> objects) {
-      this.objects = objects;
-      return this;
-    }
     /**
      * The build method creates and returns the immutable Entity object.
      */

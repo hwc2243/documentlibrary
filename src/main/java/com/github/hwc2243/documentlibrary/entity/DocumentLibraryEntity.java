@@ -2,7 +2,6 @@ package com.github.hwc2243.documentlibrary.entity;
 
 
 import com.github.hwc2243.documentlibrary.entity.base.BaseDocumentLibraryEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentObjectEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentLibrary;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Inheritance;
@@ -15,7 +14,7 @@ import java.io.Serializable;
 @Table(name="documentLibrary")
 public class DocumentLibraryEntity
     extends BaseDocumentLibraryEntity<DocumentLibraryEntity>
-    implements DocumentLibrary<DocumentObjectEntity>, Serializable
+    implements DocumentLibrary, Serializable
 {
 	public DocumentLibraryEntity ()
 	{

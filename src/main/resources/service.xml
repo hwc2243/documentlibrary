@@ -2,12 +2,6 @@
     <entity name="documentLibrary">
         <attribute name="name" type="string" />
         
-        <related name="objects" 
-                 entity="documentObject" 
-                 relationship="one_to_many" 
-                 collection="list" 
-                 mapped-by="library" />
-                 
         <finder unique="true">
             <finder-attribute name="name" />
         </finder>
@@ -19,13 +13,11 @@
         
         <related name="library" 
                  entity="documentLibrary" 
-                 relationship="many_to_one" 
-                 bidirectional="true" />
+                 relationship="many_to_one" />
                  
         <related name="parentFolder" 
                  entity="documentFolder" 
-                 relationship="many_to_one" 
-                 bidirectional="true" />
+                 relationship="many_to_one" />
                  
         <finder unique="true">
         	<finder-attribute name="name"/>
