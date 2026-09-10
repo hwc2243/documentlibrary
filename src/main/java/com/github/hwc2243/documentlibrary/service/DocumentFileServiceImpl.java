@@ -90,6 +90,30 @@ public class DocumentFileServiceImpl
   }
 
   @Override
+  public List<DocumentFileDTO> findFiles(DocumentFolderDTO parentFolder) throws ServiceException {
+    if (parentFolder == null || parentFolder.getId() == null) {
+      String message = "A persisted parent DocumentFolderDTO is required to find document files.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    if (parentFolder.getLibrary() == null || parentFolder.getLibrary().getId() == null) {
+      String message = "The parent folder must belong to a persisted DocumentLibraryDTO.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    return toDtos(documentFilePersistence.findByLibraryIdAndParentFolderId(
+      parentFolder.getLibrary().getId(),
+      parentFolder.getId()
+    ));
+  }
+
+  @Override
   public Path getLibraryPath(DocumentFileDTO documentFile) throws ServiceException {
     if (documentFile == null || documentFile.getId() == null) {
       String message = "A persisted DocumentFileDTO with an ID is required to determine its library path.";

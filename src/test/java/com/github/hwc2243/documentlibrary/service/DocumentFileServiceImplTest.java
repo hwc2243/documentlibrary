@@ -20,6 +20,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -182,6 +183,25 @@ class DocumentFileServiceImplTest {
     assertTrue(exception.getMessage().contains("not a file"));
   }
 
+  @Test
+  void findFilesUsesTheParentFoldersLibraryAndId() throws ServiceException {
+    DocumentFileEntity entity = new DocumentFileEntity();
+    DocumentFileDTO expectedFile = new DocumentFileDTO();
+    Long[] finderArguments = new Long[2];
+    TestDocumentFileService service = new TestDocumentFileService(expectedFile);
+    ReflectionTestUtils.setField(
+      service,
+      "documentFilePersistence",
+      filesPersistence(List.of(entity), finderArguments)
+    );
+
+    List<DocumentFileDTO> files = service.findFiles(parentFolder());
+
+    assertEquals(List.of(expectedFile), files);
+    assertEquals(10L, finderArguments[0]);
+    assertEquals(20L, finderArguments[1]);
+  }
+
   private DocumentFilePersistence filePersistence(DocumentFileEntity entity) {
     return (DocumentFilePersistence) Proxy.newProxyInstance(
       getClass().getClassLoader(),
@@ -189,6 +209,25 @@ class DocumentFileServiceImplTest {
       (proxy, method, arguments) -> {
         if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
           return entity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+  }
+
+  private DocumentFilePersistence filesPersistence(
+    List<DocumentFileEntity> entities,
+    Long[] finderArguments
+  ) {
+    return (DocumentFilePersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFilePersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          finderArguments[0] = (Long) arguments[0];
+          finderArguments[1] = (Long) arguments[1];
+          return entities;
         }
 
         throw new UnsupportedOperationException(method.getName());
@@ -246,6 +285,11 @@ class DocumentFileServiceImplTest {
     @Override
     protected DocumentFileDTO toDto(DocumentFileEntity entity) {
       return documentFile;
+    }
+
+    @Override
+    protected List<DocumentFileDTO> toDtos(List<DocumentFileEntity> entities) {
+      return entities.stream().map(entity -> documentFile).toList();
     }
   }
 }
