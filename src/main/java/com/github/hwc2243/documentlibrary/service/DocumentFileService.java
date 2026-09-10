@@ -2,13 +2,14 @@ package com.github.hwc2243.documentlibrary.service;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
+import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFileService;
 import java.io.InputStream;
 import java.nio.file.Path;
 
 public interface DocumentFileService extends BaseDocumentFileService<DocumentFileDTO,Long>
 {
-  DocumentFileDTO fetchByName(String name) throws ServiceException;
+  DocumentFileDTO fetchByName(String name, DocumentFolderDTO parentFolder) throws ServiceException;
 
   Path getLibraryPath(DocumentFileDTO documentFile) throws ServiceException;
 

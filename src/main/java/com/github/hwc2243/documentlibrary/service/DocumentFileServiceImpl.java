@@ -2,10 +2,14 @@ package com.github.hwc2243.documentlibrary.service;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentFileDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFileVersionDTO;
+import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFileVersionEntity;
+import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFileVersionPersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentLibraryPersistence;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFileServiceImpl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,9 +44,35 @@ public class DocumentFileServiceImpl
   @Autowired
   protected DocumentFileVersionPersistence documentFileVersionPersistence;
 
+  @Autowired
+  protected DocumentLibraryPersistence documentLibraryPersistence;
+
+  @Autowired
+  protected DocumentFolderPersistence documentFolderPersistence;
+
   @Override
-  public DocumentFileDTO fetchByName(String name) throws ServiceException {
-    DocumentFileEntity documentFile = documentFilePersistence.findFirstByName(name);
+  public DocumentFileDTO fetchByName(String name, DocumentFolderDTO parentFolder) throws ServiceException {
+    if (parentFolder == null || parentFolder.getId() == null) {
+      String message = "A persisted parent DocumentFolderDTO is required to find a document file by name.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    if (parentFolder.getLibrary() == null || parentFolder.getLibrary().getId() == null) {
+      String message = "The parent folder must belong to a persisted DocumentLibraryDTO.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    DocumentFileEntity documentFile = documentFilePersistence.findFirstByNameAndLibraryIdAndParentFolderId(
+      name,
+      parentFolder.getLibrary().getId(),
+      parentFolder.getId()
+    );
 
     if (documentFile == null) {
       return null;
@@ -109,7 +139,7 @@ public class DocumentFileServiceImpl
 
     DocumentFileDTO persistedDocumentFile = ensurePersistedDocumentFile(documentFile);
     Path fileDirectory = getLibraryPath(documentFile);
-    DocumentFileVersionEntity savedVersion = createVersion(persistedDocumentFile);
+    DocumentFileVersionEntity savedVersion = createVersion(documentFile);
     Path versionPath = fileDirectory.resolve(savedVersion.getId().toString());
 
     try {
@@ -200,20 +230,106 @@ public class DocumentFileServiceImpl
       return documentFile;
     }
 
-    DocumentFileDTO persistedDocumentFile = super.create(documentFile);
+    DocumentFileDTO persistedDocumentFile = create(documentFile);
     documentFile.setId(persistedDocumentFile.getId());
 
     return persistedDocumentFile;
   }
 
-  private DocumentFileVersionEntity createVersion(DocumentFileDTO documentFile) {
+  @Override
+  public DocumentFileDTO create(DocumentFileDTO documentFile) throws ServiceException {
+    return persist(documentFile);
+  }
+
+  @Override
+  public DocumentFileDTO update(DocumentFileDTO documentFile) throws ServiceException {
+    return persist(documentFile);
+  }
+
+  private DocumentFileDTO persist(DocumentFileDTO documentFile) throws ServiceException {
+    if (documentFile == null || documentFile.getLibrary() == null
+      || documentFile.getLibrary().getId() == null) {
+      String message = "A persisted DocumentLibraryDTO is required to save a document file.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
+    DocumentLibraryEntity library = documentLibraryPersistence
+      .findById(documentFile.getLibrary().getId())
+      .orElseThrow(() -> missingLibrary(documentFile.getLibrary().getId()));
+    DocumentFileEntity entity = toEntity(documentFile);
+
+    entity.setLibrary(library);
+
+    if (documentFile.getParentFolder() != null) {
+      if (documentFile.getParentFolder().getId() == null) {
+        String message = "The parent DocumentFolderDTO must have an ID.";
+
+        logger.error(message);
+
+        throw new ServiceException(message);
+      }
+
+      var parentFolder = documentFolderPersistence
+        .findById(documentFile.getParentFolder().getId())
+        .orElseThrow(() -> missingParentFolder(documentFile.getParentFolder().getId()));
+
+      if (parentFolder == null || parentFolder.getLibrary() == null
+        || !library.getId().equals(parentFolder.getLibrary().getId())) {
+        String message = "The parent folder does not belong to the document library.";
+
+        logger.error(message);
+
+        throw new ServiceException(message);
+      }
+
+      entity.setParentFolder(parentFolder);
+    }
+
+    DocumentFileDTO savedFile = toDto(documentFilePersistence.save(entity));
+
+    savedFile.setLibrary(documentFile.getLibrary());
+    savedFile.setParentFolder(documentFile.getParentFolder());
+
+    return savedFile;
+  }
+
+  private ServiceException missingLibrary(Long libraryId) {
+    String message = "Document library not found: " + libraryId;
+
+    logger.error(message);
+
+    return new ServiceException(message);
+  }
+
+  private ServiceException missingParentFolder(Long parentFolderId) {
+    String message = "Parent document folder not found: " + parentFolderId;
+
+    logger.error(message);
+
+    return new ServiceException(message);
+  }
+
+  private DocumentFileVersionEntity createVersion(DocumentFileDTO documentFile) throws ServiceException {
+    DocumentFileDTO persistedDocumentFile = fetchByName(documentFile.getName(), documentFile.getParentFolder());
+
+    if (persistedDocumentFile == null || persistedDocumentFile.getId() == null) {
+      String message = "A persisted document file is required to create a file version.";
+
+      logger.error(message);
+
+      throw new ServiceException(message);
+    }
+
     Long nextVersion = documentFileVersionPersistence
-      .findTopByDocumentFile_IdOrderByVersionDesc(documentFile.getId())
+      .findTopByDocumentFile_IdOrderByVersionDesc(persistedDocumentFile.getId())
       .map(version -> version.getVersion() + 1)
       .orElse(1L);
     DocumentFileVersionEntity documentFileVersion = new DocumentFileVersionEntity();
 
-    documentFileVersion.setDocumentFile(documentFilePersistence.getReferenceById(documentFile.getId()));
+    documentFileVersion.setDocumentFile(documentFilePersistence.getReferenceById(persistedDocumentFile.getId()));
     documentFileVersion.setVersion(nextVersion);
     documentFileVersion.setMimeType(documentFile.getMimeType());
     documentFileVersion.setCreateDate(LocalDateTime.now());

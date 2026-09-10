@@ -17,7 +17,7 @@ public abstract class BaseDocumentFileVersionServiceImpl<D extends DocumentFileV
 
   @Autowired
   private BaseDocumentFileVersionPersistence<E, ID> baseDocumentFileVersionPersistence;
-  
+
   @Autowired
   protected DocumentFileVersionPersistence documentFileVersionPersistence;
 
@@ -41,6 +41,7 @@ public abstract class BaseDocumentFileVersionServiceImpl<D extends DocumentFileV
     List<E> entities = baseDocumentFileVersionPersistence.findAll();
     return toDtos(entities);
   }
+
 
   @Override
   public D get (ID id) throws ServiceException

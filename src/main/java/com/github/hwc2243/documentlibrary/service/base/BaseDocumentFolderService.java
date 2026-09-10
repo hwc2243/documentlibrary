@@ -5,4 +5,8 @@ import com.github.hwc2243.documentlibrary.dto.base.BaseDocumentFolderDTO;
 import java.util.List;
 
 public interface BaseDocumentFolderService<D extends BaseDocumentFolderDTO, ID> extends EntityService<D, ID> {
+
+	public D fetchByNameAndLibraryIdAndParentFolderId (String name, Long libraryId, Long parentFolderId);
+
+	public List<D> findByLibraryIdAndParentFolderId (Long libraryId, Long parentFolderId);
 }

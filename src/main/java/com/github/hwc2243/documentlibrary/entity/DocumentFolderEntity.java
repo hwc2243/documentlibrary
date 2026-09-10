@@ -2,9 +2,7 @@ package com.github.hwc2243.documentlibrary.entity;
 
 
 import com.github.hwc2243.documentlibrary.entity.base.BaseDocumentFolderEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentObjectEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentFolder;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Inheritance;
@@ -17,7 +15,7 @@ import java.io.Serializable;
 @Table(name="documentFolder")
 public class DocumentFolderEntity
     extends BaseDocumentFolderEntity<DocumentFolderEntity>
-    implements DocumentFolder<DocumentLibraryEntity, DocumentFolderEntity, DocumentObjectEntity>, Serializable
+    implements DocumentFolder<DocumentLibraryEntity, DocumentFolderEntity>, Serializable
 {
 	public DocumentFolderEntity ()
 	{

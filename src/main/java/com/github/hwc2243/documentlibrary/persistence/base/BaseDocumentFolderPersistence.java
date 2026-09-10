@@ -12,4 +12,10 @@ import org.springframework.data.repository.NoRepositoryBean;
 public interface BaseDocumentFolderPersistence<E extends DocumentFolderEntity, ID> extends JpaRepository<E, ID>
 {
 
+
+    public E findFirstByNameAndLibraryIdAndParentFolderId(String name, Long libraryId, Long parentFolderId);
+
+
+    public List<E> findByLibraryIdAndParentFolderId(Long libraryId, Long parentFolderId);
+
 }

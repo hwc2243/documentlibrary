@@ -42,11 +42,13 @@ class DocumentFileServiceImplTest {
     documentFile.setId(30L);
     documentFile.setLibrary(documentLibrary);
     documentFile.setParentFolder(documentFolder);
+    documentFile.setName("notes");
     documentFile.setMimeType("text/plain");
     DocumentFileEntity documentFileEntity = new DocumentFileEntity();
+    documentFileEntity.setObjectType(DocumentObjectObjectType.FILE);
     DocumentFileVersionEntity[] latestVersion = new DocumentFileVersionEntity[1];
     long[] nextVersionId = { 40L };
-    DocumentFileServiceImpl service = new DocumentFileServiceImpl();
+    DocumentFileServiceImpl service = new TestDocumentFileService(documentFile);
     service.documentLibraryService = libraryService();
     service.documentFolderService = folderService();
     DocumentFilePersistence documentFilePersistence = (DocumentFilePersistence) Proxy.newProxyInstance(
@@ -54,6 +56,10 @@ class DocumentFileServiceImplTest {
       new Class<?>[] { DocumentFilePersistence.class },
       (proxy, method, arguments) -> {
         if (method.getName().equals("getReferenceById")) {
+          return documentFileEntity;
+        }
+
+        if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
           return documentFileEntity;
         }
 
@@ -155,7 +161,8 @@ class DocumentFileServiceImplTest {
     TestDocumentFileService service = new TestDocumentFileService(expectedFile);
     ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
 
-    DocumentFileDTO documentFile = service.fetchByName("notes");
+    DocumentFolderDTO parentFolder = parentFolder();
+    DocumentFileDTO documentFile = service.fetchByName("notes", parentFolder);
 
     assertEquals(expectedFile, documentFile);
   }
@@ -167,7 +174,10 @@ class DocumentFileServiceImplTest {
     TestDocumentFileService service = new TestDocumentFileService(new DocumentFileDTO());
     ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
 
-    ServiceException exception = assertThrows(ServiceException.class, () -> service.fetchByName("notes"));
+    ServiceException exception = assertThrows(
+      ServiceException.class,
+      () -> service.fetchByName("notes", parentFolder())
+    );
 
     assertTrue(exception.getMessage().contains("not a file"));
   }
@@ -177,7 +187,7 @@ class DocumentFileServiceImplTest {
       getClass().getClassLoader(),
       new Class<?>[] { DocumentFilePersistence.class },
       (proxy, method, arguments) -> {
-        if (method.getName().equals("findFirstByName")) {
+        if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
           return entity;
         }
 
@@ -214,6 +224,15 @@ class DocumentFileServiceImplTest {
       new Class<?>[] { DocumentFolderService.class },
       (proxy, method, arguments) -> temporaryDirectory.resolve("10/20")
     );
+  }
+
+  private static DocumentFolderDTO parentFolder() {
+    DocumentLibraryDTO documentLibrary = new DocumentLibraryDTO();
+    documentLibrary.setId(10L);
+    DocumentFolderDTO parentFolder = new DocumentFolderDTO();
+    parentFolder.setId(20L);
+    parentFolder.setLibrary(documentLibrary);
+    return parentFolder;
   }
 
   private static final class TestDocumentFileService extends DocumentFileServiceImpl {

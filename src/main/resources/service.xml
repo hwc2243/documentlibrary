@@ -29,15 +29,17 @@
                  
         <finder unique="true">
         	<finder-attribute name="name"/>
+        	<finder-attribute name="library"/>
+        	<finder-attribute name="parentFolder"/>
         </finder>
+        
+    	<finder>
+    		<finder-attribute name="library" />
+    		<finder-attribute name="parentFolder" />
+    	</finder>
     </entity>
 
     <entity name="documentFolder" parent="documentObject">
-        <related name="children" 
-                 entity="documentObject" 
-                 relationship="one_to_many" 
-                 collection="list" 
-                 mapped-by="parentFolder" />
     </entity>
 
     <entity name="documentFile" parent="documentObject">
@@ -49,6 +51,7 @@
                  relationship="one_to_many" 
                  collection="list" 
                  mapped-by="documentFile" />
+                 
     </entity>
 
     <entity name="documentFileVersion">

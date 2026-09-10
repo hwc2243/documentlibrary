@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.hwc2243.documentlibrary.dto.base.BaseDocumentObjectDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
-import com.github.hwc2243.documentlibrary.dto.DocumentObjectDTO;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentFolder;
 import java.io.Serializable;
 import java.util.List;
@@ -14,11 +13,9 @@ import java.util.Set;
 
 public abstract class BaseDocumentFolderDTO
 extends BaseDocumentObjectDTO
-implements BaseDocumentFolder<DocumentLibraryDTO, DocumentFolderDTO, DocumentObjectDTO>,  Serializable
+implements BaseDocumentFolder<DocumentLibraryDTO, DocumentFolderDTO>,  Serializable
 {
   protected Long id = null;
-
-  protected List<DocumentObjectDTO> children;
 
 
   protected BaseDocumentFolderDTO () {
@@ -28,7 +25,6 @@ implements BaseDocumentFolder<DocumentLibraryDTO, DocumentFolderDTO, DocumentObj
   protected BaseDocumentFolderDTO (Builder builder)
   {
     this.id = builder.id;
-    this.children = builder.children;
   }
 
   public Long getId ()
@@ -41,16 +37,6 @@ implements BaseDocumentFolder<DocumentLibraryDTO, DocumentFolderDTO, DocumentObj
     this.id = id;
   }
 
-
-  public List<DocumentObjectDTO> getChildren ()
-  {
-    return this.children;
-  }
-  
-  public void setChildren (List<DocumentObjectDTO> children)
-  {
-    this.children = children;
-  }
 
 
     @Override
@@ -76,17 +62,12 @@ implements BaseDocumentFolder<DocumentLibraryDTO, DocumentFolderDTO, DocumentObj
   private Long id = null;
 
 
-    private List<DocumentObjectDTO> children = null;
 
     public Builder id(Long id) {
       this.id = id;
       return this;
     }
     
-    public Builder children(List<DocumentObjectDTO> children) {
-      this.children = children;
-      return this;
-    }
     /**
      * The build method creates and returns the immutable Entity object.
      */

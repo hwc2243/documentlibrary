@@ -16,7 +16,7 @@ public abstract class BaseDocumentLibraryServiceImpl<D extends DocumentLibraryDT
 
   @Autowired
   private BaseDocumentLibraryPersistence<E, ID> baseDocumentLibraryPersistence;
-  
+
   @Autowired
   protected DocumentLibraryPersistence documentLibraryPersistence;
 
@@ -46,6 +46,7 @@ public abstract class BaseDocumentLibraryServiceImpl<D extends DocumentLibraryDT
   {
 	return toDto(baseDocumentLibraryPersistence.findFirstByName(name));
   }
+
 
   @Override
   public D get (ID id) throws ServiceException

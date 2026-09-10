@@ -48,8 +48,7 @@ public abstract class BaseDocumentFileEntity<T extends BaseDocumentFileEntity<T>
   protected String mimeType = null;
   
 
-  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-  @JoinColumn(name = "documentFileId")
+  @OneToMany(mappedBy = "documentFile", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   protected List<DocumentFileVersionEntity> versions;
   
   

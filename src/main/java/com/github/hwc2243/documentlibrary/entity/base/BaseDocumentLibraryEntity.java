@@ -41,8 +41,7 @@ public abstract class BaseDocumentLibraryEntity<T extends BaseDocumentLibraryEnt
   protected String name = null;
   
 
-  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-  @JoinColumn(name = "documentLibraryId")
+  @OneToMany(mappedBy = "library", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   protected List<DocumentObjectEntity> objects;
   
   

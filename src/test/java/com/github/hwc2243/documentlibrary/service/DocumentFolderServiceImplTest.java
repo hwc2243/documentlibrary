@@ -7,12 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.hwc2243.documentlibrary.dto.DocumentFolderDTO;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
+import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentLibraryPersistence;
 import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentFolderPersistence;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -76,7 +80,39 @@ class DocumentFolderServiceImplTest {
       documentFolderEntity,
       persistedFolder
     );
+    DocumentLibraryEntity documentLibraryEntity = new DocumentLibraryEntity();
+    documentLibraryEntity.setId(10L);
+    DocumentFolderEntity parentFolderEntity = new DocumentFolderEntity();
+    parentFolderEntity.setId(20L);
+    parentFolderEntity.setLibrary(documentLibraryEntity);
     service.documentLibraryService = documentLibraryService();
+    service.documentLibraryPersistence = (DocumentLibraryPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentLibraryPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findById")) {
+          return Optional.of(documentLibraryEntity);
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findById")) {
+          return Optional.of(parentFolderEntity);
+        }
+
+        if (method.getName().equals("save")) {
+          savedEntity[0] = (DocumentFolderEntity) arguments[0];
+          return documentFolderEntity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    ));
     ReflectionTestUtils.setField(service, "baseDocumentFolderPersistence", persistence);
 
     DocumentFolderDTO createdFolder = service.create(requestedFolder);
@@ -84,6 +120,8 @@ class DocumentFolderServiceImplTest {
     assertEquals(persistedFolder, createdFolder);
     assertEquals(30L, requestedFolder.getId());
     assertEquals(documentFolderEntity, savedEntity[0]);
+    assertEquals(documentLibraryEntity, savedEntity[0].getLibrary());
+    assertEquals(parentFolderEntity, savedEntity[0].getParentFolder());
     assertTrue(Files.isDirectory(temporaryDirectory.resolve("10/20/30")));
   }
 
@@ -95,7 +133,8 @@ class DocumentFolderServiceImplTest {
     TestDocumentFolderService service = new TestDocumentFolderService(entity, expectedFolder);
     ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence(entity));
 
-    DocumentFolderDTO documentFolder = service.fetchByName("records");
+    DocumentLibraryDTO documentLibrary = documentLibrary(10L);
+    DocumentFolderDTO documentFolder = service.fetchByName("records", documentLibrary, null);
 
     assertEquals(expectedFolder, documentFolder);
   }
@@ -107,9 +146,105 @@ class DocumentFolderServiceImplTest {
     TestDocumentFolderService service = new TestDocumentFolderService(entity, new DocumentFolderDTO());
     ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence(entity));
 
-    ServiceException exception = assertThrows(ServiceException.class, () -> service.fetchByName("records"));
+    ServiceException exception = assertThrows(
+      ServiceException.class,
+      () -> service.fetchByName("records", documentLibrary(10L), null)
+    );
 
     assertTrue(exception.getMessage().contains("not a folder"));
+  }
+
+  @Test
+  void fetchByNameUsesParentsLibraryWhenLibraryIsNotProvided() throws ServiceException {
+    DocumentLibraryDTO documentLibrary = documentLibrary(10L);
+    DocumentFolderDTO parentFolder = folder(20L, documentLibrary, null);
+    DocumentFolderEntity entity = new DocumentFolderEntity();
+    entity.setObjectType(DocumentObjectObjectType.FOLDER);
+    Long[] finderArguments = new Long[2];
+    DocumentFolderPersistence persistence = (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
+          finderArguments[0] = (Long) arguments[1];
+          finderArguments[1] = (Long) arguments[2];
+          return entity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+    TestDocumentFolderService service = new TestDocumentFolderService(entity, new DocumentFolderDTO());
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", persistence);
+
+    service.fetchByName("child", null, parentFolder);
+
+    assertEquals(10L, finderArguments[0]);
+    assertEquals(20L, finderArguments[1]);
+  }
+
+  @Test
+  void fetchByNameRejectsParentFromDifferentLibrary() {
+    DocumentFolderDTO parentFolder = folder(20L, documentLibrary(10L), null);
+    DocumentFolderServiceImpl service = new DocumentFolderServiceImpl();
+
+    ServiceException exception = assertThrows(
+      ServiceException.class,
+      () -> service.fetchByName("child", documentLibrary(11L), parentFolder)
+    );
+
+    assertTrue(exception.getMessage().contains("does not belong"));
+  }
+
+  @Test
+  void findFoldersUsesLibraryAndNullParentForRootFolders() throws ServiceException {
+    DocumentFolderEntity entity = new DocumentFolderEntity();
+    DocumentFolderDTO expectedFolder = new DocumentFolderDTO();
+    Long[] finderArguments = new Long[2];
+    TestDocumentFolderService service = new TestDocumentFolderService(entity, expectedFolder);
+    ReflectionTestUtils.setField(
+      service,
+      "documentFolderPersistence",
+      foldersPersistence(List.of(entity), finderArguments)
+    );
+
+    List<DocumentFolderDTO> folders = service.findFolders(documentLibrary(10L), null);
+
+    assertEquals(List.of(expectedFolder), folders);
+    assertEquals(10L, finderArguments[0]);
+    assertEquals(null, finderArguments[1]);
+  }
+
+  @Test
+  void findFoldersUsesParentsLibraryWhenLibraryIsNotProvided() throws ServiceException {
+    DocumentLibraryDTO documentLibrary = documentLibrary(10L);
+    DocumentFolderDTO parentFolder = folder(20L, documentLibrary, null);
+    DocumentFolderEntity entity = new DocumentFolderEntity();
+    Long[] finderArguments = new Long[2];
+    TestDocumentFolderService service = new TestDocumentFolderService(entity, new DocumentFolderDTO());
+    ReflectionTestUtils.setField(
+      service,
+      "documentFolderPersistence",
+      foldersPersistence(List.of(entity), finderArguments)
+    );
+
+    service.findFolders(null, parentFolder);
+
+    assertEquals(10L, finderArguments[0]);
+    assertEquals(20L, finderArguments[1]);
+  }
+
+  @Test
+  void findFoldersRejectsParentFromDifferentLibrary() {
+    DocumentFolderDTO parentFolder = folder(20L, documentLibrary(10L), null);
+    DocumentFolderServiceImpl service = new DocumentFolderServiceImpl();
+
+    ServiceException exception = assertThrows(
+      ServiceException.class,
+      () -> service.findFolders(documentLibrary(11L), parentFolder)
+    );
+
+    assertTrue(exception.getMessage().contains("does not belong"));
   }
 
   private DocumentFolderPersistence folderPersistence(DocumentFolderEntity entity) {
@@ -117,8 +252,27 @@ class DocumentFolderServiceImplTest {
       getClass().getClassLoader(),
       new Class<?>[] { DocumentFolderPersistence.class },
       (proxy, method, arguments) -> {
-        if (method.getName().equals("findFirstByName")) {
+        if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
           return entity;
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+  }
+
+  private DocumentFolderPersistence foldersPersistence(
+    List<DocumentFolderEntity> entities,
+    Long[] finderArguments
+  ) {
+    return (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          finderArguments[0] = (Long) arguments[0];
+          finderArguments[1] = (Long) arguments[1];
+          return entities;
         }
 
         throw new UnsupportedOperationException(method.getName());

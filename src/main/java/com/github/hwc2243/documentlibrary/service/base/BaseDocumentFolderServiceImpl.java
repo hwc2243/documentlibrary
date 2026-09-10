@@ -16,7 +16,7 @@ public abstract class BaseDocumentFolderServiceImpl<D extends DocumentFolderDTO,
 
   @Autowired
   private BaseDocumentFolderPersistence<E, ID> baseDocumentFolderPersistence;
-  
+
   @Autowired
   protected DocumentFolderPersistence documentFolderPersistence;
 
@@ -40,6 +40,19 @@ public abstract class BaseDocumentFolderServiceImpl<D extends DocumentFolderDTO,
     List<E> entities = baseDocumentFolderPersistence.findAll();
     return toDtos(entities);
   }
+
+  @Override
+  public D fetchByNameAndLibraryIdAndParentFolderId (String name, Long libraryId, Long parentFolderId)
+  {
+	return toDto(baseDocumentFolderPersistence.findFirstByNameAndLibraryIdAndParentFolderId(name, libraryId, parentFolderId));
+  }
+
+  @Override
+  public List<D> findByLibraryIdAndParentFolderId (Long libraryId, Long parentFolderId)
+  {
+	return toDtos(baseDocumentFolderPersistence.findByLibraryIdAndParentFolderId(libraryId, parentFolderId));
+  }
+
 
   @Override
   public D get (ID id) throws ServiceException

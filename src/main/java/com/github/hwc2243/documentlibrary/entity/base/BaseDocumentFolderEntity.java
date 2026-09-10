@@ -4,7 +4,6 @@ package com.github.hwc2243.documentlibrary.entity.base;
 import com.github.hwc2243.documentlibrary.entity.base.BaseDocumentObjectEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
-import com.github.hwc2243.documentlibrary.entity.DocumentObjectEntity;
 import com.github.hwc2243.documentlibrary.model.base.BaseDocumentFolder;
 import com.github.hwc2243.documentlibrary.model.DocumentFolder;
 import jakarta.persistence.CascadeType;
@@ -34,7 +33,7 @@ import java.util.Set;
 @MappedSuperclass
 public abstract class BaseDocumentFolderEntity<T extends BaseDocumentFolderEntity<T>>
   extends BaseDocumentObjectEntity<T>
-    implements BaseDocumentFolder<DocumentLibraryEntity, DocumentFolderEntity, DocumentObjectEntity>, Serializable
+    implements BaseDocumentFolder<DocumentLibraryEntity, DocumentFolderEntity>, Serializable
 {
   @Id
   @Column
@@ -42,10 +41,6 @@ public abstract class BaseDocumentFolderEntity<T extends BaseDocumentFolderEntit
   protected Long id = null;
 
 
-  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-  @JoinColumn(name = "documentFolderId")
-  protected List<DocumentObjectEntity> children;
-  
   
   public Long getId ()
   {
@@ -62,17 +57,6 @@ public abstract class BaseDocumentFolderEntity<T extends BaseDocumentFolderEntit
     return this.id;
   }
   
-
-  public List<DocumentObjectEntity> getChildren ()
-  {
-    return this.children;
-  }
-  
-  public void setChildren (List<DocumentObjectEntity> children)
-  {
-    this.children = children;
-  }
-
 
 
     @Override
