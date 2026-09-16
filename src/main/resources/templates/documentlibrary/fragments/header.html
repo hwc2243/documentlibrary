@@ -1,0 +1,10 @@
+<div th:fragment="header" class="header">
+  <h1>
+    <a th:href="${baseUrl}">Document Library</a>
+    <span th:if="${library != null}"> / <a th:href="${baseUrl + '/libraries/' + library.id}" th:text="${library.name}"></a></span>
+    <span th:each="breadcrumb : ${folderBreadcrumbs}">
+      / <a th:href="${baseUrl + '/folders/' + breadcrumb.id}" th:text="${breadcrumb.name}"></a>
+    </span>
+  </h1>
+  <div th:replace="~{documentlibrary/fragments/actions :: actions}"></div>
+</div>

@@ -1,0 +1,11 @@
+<nav th:fragment="breadcrumb" class="breadcrumbs" aria-label="Breadcrumb">
+  <a th:href="${baseUrl}">Documents</a>
+  <span th:if="${library != null}">
+    <span aria-hidden="true">/</span>
+    <a th:href="${baseUrl + '/libraries/' + library.id}" th:text="${library.name}">Library</a>
+  </span>
+  <span th:each="item : ${folderBreadcrumbs}">
+    <span aria-hidden="true">/</span>
+    <a th:href="${baseUrl + '/folders/' + item.id}" th:text="${item.name}">Folder</a>
+  </span>
+</nav>

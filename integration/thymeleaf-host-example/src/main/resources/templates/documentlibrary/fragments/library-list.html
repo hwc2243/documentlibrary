@@ -1,0 +1,13 @@
+<section th:fragment="libraryList" class="document-panel">
+  <h1>Document libraries</h1>
+  <ul class="document-list" th:if="${not #lists.isEmpty(libraries)}">
+    <li th:each="item : ${libraries}" class="document-row">
+      <a class="document-name" th:href="${baseUrl + '/libraries/' + item.id}" th:text="${item.name}">Library</a>
+      <form th:action="${baseUrl + '/libraries/' + item.id + '/delete'}" method="post"
+            onsubmit="return confirm('Delete this empty library?');">
+        <button class="button-danger" type="submit">Delete</button>
+      </form>
+    </li>
+  </ul>
+  <p th:if="${#lists.isEmpty(libraries)}" class="empty-state">No document libraries are available.</p>
+</section>

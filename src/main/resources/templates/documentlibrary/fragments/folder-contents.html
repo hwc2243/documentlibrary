@@ -1,0 +1,22 @@
+<div th:fragment="folderContents">
+  <h2 th:text="${folder == null ? 'Folders in ' + library.name : 'Contents of ' + folder.name}"></h2>
+  <div class="list">
+    <div th:each="item : ${folders}" class="item">
+      <a th:href="${baseUrl + '/folders/' + item.id}" th:text="'📁 ' + ${item.name}"></a>
+      <form th:action="${baseUrl + '/folders/' + item.id + '/delete'}" method="post" onsubmit="return confirm('Delete this empty folder?');">
+        <button class="danger" type="submit">Delete</button>
+      </form>
+    </div>
+    <div th:each="row : ${fileRows}" class="item">
+      <div>
+        <a th:href="${baseUrl + '/files/' + row.file.id + '/download'}" th:text="'📄 ' + ${row.file.name}"></a>
+        <span class="muted" th:text="${row.file.mimeType}"></span>
+        <div th:replace="~{documentlibrary/fragments/versions :: versions(${row})}"></div>
+      </div>
+      <form th:action="${baseUrl + '/files/' + row.file.id + '/delete'}" method="post" onsubmit="return confirm('Delete this file and all versions?');">
+        <button class="danger" type="submit">Delete</button>
+      </form>
+    </div>
+  </div>
+  <p th:if="${#lists.isEmpty(folders) and #lists.isEmpty(fileRows)}" class="empty">This location is empty.</p>
+</div>

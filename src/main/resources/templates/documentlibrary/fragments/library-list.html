@@ -1,0 +1,12 @@
+<div th:fragment="libraryList">
+  <h2>Libraries</h2>
+  <div class="list">
+    <div th:each="item : ${libraries}" class="item">
+      <a th:href="${baseUrl + '/libraries/' + item.id}" th:text="'▸ ' + ${item.name}"></a>
+      <form th:action="${baseUrl + '/libraries/' + item.id + '/delete'}" method="post" onsubmit="return confirm('Delete this empty library?');">
+        <button class="danger" type="submit">Delete</button>
+      </form>
+    </div>
+  </div>
+  <p th:if="${#lists.isEmpty(libraries)}" class="empty">No libraries yet. Create one to begin.</p>
+</div>

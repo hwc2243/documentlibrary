@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head(${pageTitle})}">
+  <title>Documents</title>
+</head>
+<body>
+  <header th:replace="~{layout :: siteHeader}"></header>
+  <main class="page-shell">
+    <div th:replace="~{documentlibrary/fragments/breadcrumb :: breadcrumb}"></div>
+    <div th:replace="~{documentlibrary/fragments/actions :: actions}"></div>
+
+    <p th:if="${success}" class="alert alert-success" th:text="${success}"></p>
+    <p th:if="${error}" class="alert alert-error" th:text="${error}"></p>
+
+    <section th:if="${libraries != null}">
+      <div th:replace="~{documentlibrary/fragments/library-list :: libraryList}"></div>
+    </section>
+    <section th:if="${library != null}">
+      <div th:replace="~{documentlibrary/fragments/folder-contents :: folderContents}"></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.github.hwc2243</groupId>
 	<artifactId>documentlibrary</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>documentlibrary</name>
 	<description>documentlibrary</description>
 	<properties>

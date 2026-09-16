@@ -1,0 +1,37 @@
+<section th:fragment="actions" class="document-actions" aria-label="Document actions">
+  <form th:if="${library == null}" th:action="${baseUrl + '/libraries'}" method="post">
+    <label>
+      <span class="visually-hidden">Library name</span>
+      <input name="name" placeholder="Library name" required>
+    </label>
+    <button type="submit">Create library</button>
+  </form>
+
+  <form th:if="${library != null and folder == null}"
+        th:action="${baseUrl + '/libraries/' + library.id + '/folders'}" method="post">
+    <label>
+      <span class="visually-hidden">Folder name</span>
+      <input name="name" placeholder="Folder name" required>
+    </label>
+    <button type="submit">Create folder</button>
+  </form>
+
+  <form th:if="${folder != null}"
+        th:action="${baseUrl + '/folders/' + folder.id + '/folders'}" method="post">
+    <label>
+      <span class="visually-hidden">Folder name</span>
+      <input name="name" placeholder="Subfolder name" required>
+    </label>
+    <button type="submit">Create subfolder</button>
+  </form>
+
+  <form th:if="${folder != null}"
+        th:action="${baseUrl + '/folders/' + folder.id + '/files'}"
+        method="post" enctype="multipart/form-data">
+    <label class="file-picker">
+      <span>Choose a file</span>
+      <input type="file" name="file" required>
+    </label>
+    <button type="submit">Upload</button>
+  </form>
+</section>

@@ -1,0 +1,7 @@
+<div th:fragment="versions(row)" class="versions">
+  <span class="muted">Versions:</span>
+  <a th:each="version : ${row.versions}"
+     th:href="${baseUrl + '/files/' + row.file.id + '/versions/' + version.id + '/download'}"
+     th:text="'v' + ${version.version}"></a>
+  <span th:if="${#lists.isEmpty(row.versions)}" class="muted">none</span>
+</div>

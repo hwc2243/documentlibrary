@@ -1,0 +1,10 @@
+<details th:fragment="versions(row)" class="file-versions">
+  <summary>Versions</summary>
+  <ul th:if="${not #lists.isEmpty(row.versions)}">
+    <li th:each="version : ${row.versions}">
+      <a th:href="${baseUrl + '/files/' + row.file.id + '/versions/' + version.id + '/download'}"
+         th:text="'Download version ' + version.version">Download version</a>
+    </li>
+  </ul>
+  <p th:if="${#lists.isEmpty(row.versions)}">No versions are available.</p>
+</details>

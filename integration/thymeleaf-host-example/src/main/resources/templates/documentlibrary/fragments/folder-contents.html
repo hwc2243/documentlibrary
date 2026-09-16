@@ -1,0 +1,29 @@
+<section th:fragment="folderContents" class="document-panel">
+  <h1 th:text="${folder == null ? library.name : folder.name}">Documents</h1>
+  <p class="panel-description" th:text="${folder == null ? 'Top-level folders' : 'Folder contents'}"></p>
+
+  <ul class="document-list">
+    <li th:each="item : ${folders}" class="document-row">
+      <a class="document-name" th:href="${baseUrl + '/folders/' + item.id}" th:text="'Folder: ' + ${item.name}">Folder</a>
+      <form th:action="${baseUrl + '/folders/' + item.id + '/delete'}" method="post"
+            onsubmit="return confirm('Delete this empty folder?');">
+        <button class="button-danger" type="submit">Delete</button>
+      </form>
+    </li>
+
+    <li th:each="row : ${fileRows}" class="document-row document-file">
+      <div>
+        <a class="document-name" th:href="${baseUrl + '/files/' + row.file.id + '/download'}"
+           th:text="row.file.name">File</a>
+        <span class="file-type" th:text="${row.file.mimeType}"></span>
+        <div th:replace="~{documentlibrary/fragments/versions :: versions(${row})}"></div>
+      </div>
+      <form th:action="${baseUrl + '/files/' + row.file.id + '/delete'}" method="post"
+            onsubmit="return confirm('Delete this file and all versions?');">
+        <button class="button-danger" type="submit">Delete</button>
+      </form>
+    </li>
+  </ul>
+
+  <p th:if="${#lists.isEmpty(folders) and #lists.isEmpty(fileRows)}" class="empty-state">This folder is empty.</p>
+</section>

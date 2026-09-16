@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(pageTitle)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${pageTitle} + ' · Acme Portal'">Acme Portal</title>
+  <link rel="stylesheet" th:href="@{/css/document-library-host.css}">
+</head>
+<body>
+  <header th:fragment="siteHeader" class="site-header">
+    <a class="brand" th:href="@{/}">Acme Portal</a>
+    <nav aria-label="Primary navigation">
+      <a th:href="@{/projects}">Projects</a>
+      <a th:href="@{/dl}">Documents</a>
+    </nav>
+  </header>
+</body>
+</html>
