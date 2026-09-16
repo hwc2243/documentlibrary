@@ -29,3 +29,18 @@ The controller exposes these model attributes to the templates:
 The forms and links deliberately keep the document-library endpoints. A host
 application can add its own CSRF fields, authorization-aware controls, or
 layout fragments as required by its security and design systems.
+
+## Building and running the document-library application
+
+The project publishes two JARs when built:
+
+- `documentlibrary-<version>.jar` is the conventional shared-library JAR. Use
+  it as a Maven/Gradle dependency in another application.
+- `documentlibrary-<version>-exec.jar` is the self-contained Spring Boot
+  executable. Run it with `java -jar documentlibrary-<version>-exec.jar`.
+
+For development, run the application directly from the project with:
+
+```shell
+mvn spring-boot:run
+```

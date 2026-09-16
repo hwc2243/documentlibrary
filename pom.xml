@@ -133,10 +133,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<!-- This project is a shared library, not an executable Boot archive. -->
-					<skip>true</skip>
-				</configuration>
+				<executions>
+					<execution>
+						<!-- Keep the main artifact as a conventional dependency JAR. -->
+						<id>repackage</id>
+						<configuration>
+							<!-- Attach the runnable Boot archive instead of replacing the library. -->
+							<classifier>exec</classifier>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
