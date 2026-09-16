@@ -20,6 +20,7 @@ public abstract class BaseDocumentFolderServiceImpl<D extends DocumentFolderDTO,
   @Autowired
   protected DocumentFolderPersistence documentFolderPersistence;
 
+
     @Override
   public D create (D dto) throws ServiceException
   {

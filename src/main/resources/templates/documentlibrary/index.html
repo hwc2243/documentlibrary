@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${pageTitle} + ' · Document Library'">Document Library</title>
+  <style>
+    body { background: #f5f7fb; color: #172033; font: 15px/1.45 system-ui, sans-serif; margin: 0; }
+    main { margin: 2rem auto; max-width: 1050px; padding: 0 1rem; }
+    .card { background: white; border: 1px solid #dce2ed; border-radius: 10px; box-shadow: 0 2px 8px #15244a0d; padding: 1.25rem; }
+    .header, .header-actions, .item, .versions { align-items: center; display: flex; gap: .75rem; }
+    .header { justify-content: space-between; } .header-actions { flex-wrap: wrap; justify-content: flex-end; }
+    h1 { font-size: 1.45rem; margin: 0; } h2 { font-size: 1rem; margin: 1.5rem 0 .5rem; }
+    form { display: inline-flex; gap: .45rem; } input { border: 1px solid #b8c2d3; border-radius: 5px; padding: .45rem .55rem; }
+    button, .button { background: #1769e0; border: 0; border-radius: 5px; color: white; cursor: pointer; padding: .48rem .75rem; text-decoration: none; }
+    button.danger { background: #b42318; } .button.secondary { background: #52627a; }
+    .notice { border-radius: 5px; margin: 1rem 0; padding: .7rem; } .success { background: #e8f7ed; color: #176b38; } .error { background: #fff0ee; color: #a1281d; }
+    .list { border-top: 1px solid #e7ebf1; } .item { border-bottom: 1px solid #e7ebf1; padding: .75rem .25rem; }
+    .item > :first-child { flex: 1; } .muted { color: #65738a; font-size: .9rem; } .versions { flex-wrap: wrap; margin-left: 1.7rem; padding: .2rem 0 .65rem; }
+    a { color: #155fc2; text-decoration: none; } a:hover { text-decoration: underline; } .empty { color: #65738a; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <div class="header">
+      <h1>
+        <a th:href="${baseUrl}">Document Library</a>
+        <span th:if="${library != null}"> / <a th:href="${baseUrl + '/libraries/' + library.id}" th:text="${library.name}"></a></span>
+        <span th:each="breadcrumb : ${folderBreadcrumbs}">
+          / <a th:href="${baseUrl + '/folders/' + breadcrumb.id}" th:text="${breadcrumb.name}"></a>
+        </span>
+      </h1>
+      <div class="header-actions">
+        <form th:if="${library == null}" th:action="${baseUrl + '/libraries'}" method="post">
+          <input name="name" aria-label="New library name" placeholder="New library name" required>
+          <button type="submit">+ Library</button>
+        </form>
+        <form th:if="${library != null and folder == null}" th:action="${baseUrl + '/libraries/' + library.id + '/folders'}" method="post">
+          <input name="name" aria-label="New folder name" placeholder="New folder name" required>
+          <button type="submit">+ Folder</button>
+        </form>
+        <form th:if="${folder != null}" th:action="${baseUrl + '/folders/' + folder.id + '/folders'}" method="post">
+          <input name="name" aria-label="New folder name" placeholder="New folder name" required>
+          <button type="submit">+ Folder</button>
+        </form>
+        <form th:if="${folder != null}" th:action="${baseUrl + '/folders/' + folder.id + '/files'}" method="post" enctype="multipart/form-data">
+          <input type="file" name="file" required>
+          <button type="submit">Upload file</button>
+        </form>
+      </div>
+    </div>
+
+    <div th:if="${success}" class="notice success" th:text="${success}"></div>
+    <div th:if="${error}" class="notice error" th:text="${error}"></div>
+
+    <div th:if="${libraries != null}">
+      <h2>Libraries</h2>
+      <div class="list">
+        <div th:each="item : ${libraries}" class="item">
+          <a th:href="${baseUrl + '/libraries/' + item.id}" th:text="'▸ ' + ${item.name}"></a>
+          <form th:action="${baseUrl + '/libraries/' + item.id + '/delete'}" method="post" onsubmit="return confirm('Delete this empty library?');">
+            <button class="danger" type="submit">Delete</button>
+          </form>
+        </div>
+      </div>
+      <p th:if="${#lists.isEmpty(libraries)}" class="empty">No libraries yet. Create one to begin.</p>
+    </div>
+
+    <div th:if="${library != null}">
+      <h2 th:text="${folder == null ? 'Folders in ' + library.name : 'Contents of ' + folder.name}"></h2>
+      <div class="list">
+        <div th:each="item : ${folders}" class="item">
+          <a th:href="${baseUrl + '/folders/' + item.id}" th:text="'📁 ' + ${item.name}"></a>
+          <form th:action="${baseUrl + '/folders/' + item.id + '/delete'}" method="post" onsubmit="return confirm('Delete this empty folder?');">
+            <button class="danger" type="submit">Delete</button>
+          </form>
+        </div>
+        <div th:each="row : ${fileRows}" class="item">
+          <div>
+            <a th:href="${baseUrl + '/files/' + row.file.id + '/download'}" th:text="'📄 ' + ${row.file.name}"></a>
+            <span class="muted" th:text="${row.file.mimeType}"></span>
+            <div class="versions">
+              <span class="muted">Versions:</span>
+              <a th:each="version : ${row.versions}" th:href="${baseUrl + '/files/' + row.file.id + '/versions/' + version.id + '/download'}" th:text="'v' + ${version.version}"></a>
+              <span th:if="${#lists.isEmpty(row.versions)}" class="muted">none</span>
+            </div>
+          </div>
+          <form th:action="${baseUrl + '/files/' + row.file.id + '/delete'}" method="post" onsubmit="return confirm('Delete this file and all versions?');">
+            <button class="danger" type="submit">Delete</button>
+          </form>
+        </div>
+      </div>
+      <p th:if="${#lists.isEmpty(folders) and #lists.isEmpty(fileRows)}" class="empty">This location is empty.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

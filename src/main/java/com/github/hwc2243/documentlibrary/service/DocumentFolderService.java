@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface DocumentFolderService extends BaseDocumentFolderService<DocumentFolderDTO,Long>
 {
+	public void delete (DocumentFolderDTO folder) throws ServiceException;
+	
   DocumentFolderDTO fetchByName(
     String name,
     DocumentLibraryDTO documentLibrary,
@@ -20,4 +22,5 @@ public interface DocumentFolderService extends BaseDocumentFolderService<Documen
   ) throws ServiceException;
 
   Path getLibraryPath(DocumentFolderDTO documentFolder) throws ServiceException;
+
 }

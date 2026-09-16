@@ -187,6 +187,20 @@ class DocumentFileServiceImplTest {
   }
 
   @Test
+  void fetchByNameRepairsLegacyFileWithoutAnObjectType() throws ServiceException {
+    DocumentFileEntity entity = new DocumentFileEntity();
+    DocumentFileDTO expectedFile = new DocumentFileDTO();
+    expectedFile.setId(30L);
+    TestDocumentFileService service = new TestDocumentFileService(expectedFile);
+    ReflectionTestUtils.setField(service, "documentFilePersistence", filePersistence(entity));
+
+    DocumentFileDTO documentFile = service.fetchByName("notes", parentFolder());
+
+    assertEquals(expectedFile, documentFile);
+    assertEquals(DocumentObjectObjectType.FILE, entity.getObjectType());
+  }
+
+  @Test
   void findFilesUsesTheParentFoldersLibraryAndId() throws ServiceException {
     DocumentFileEntity entity = new DocumentFileEntity();
     DocumentFileDTO expectedFile = new DocumentFileDTO();
@@ -216,6 +230,10 @@ class DocumentFileServiceImplTest {
       (proxy, method, arguments) -> {
         if (method.getName().equals("findFirstByNameAndLibraryIdAndParentFolderId")) {
           return entity;
+        }
+
+        if (method.getName().equals("save")) {
+          return arguments[0];
         }
 
         throw new UnsupportedOperationException(method.getName());

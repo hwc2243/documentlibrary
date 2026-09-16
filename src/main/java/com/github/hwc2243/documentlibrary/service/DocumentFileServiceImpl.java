@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,13 @@ public class DocumentFileServiceImpl
 
     if (documentFile == null) {
       return null;
+    }
+
+    if (documentFile.getObjectType() == null) {
+      // Files created before the object-type value was assigned are valid file
+      // rows; repair that legacy value when they are encountered.
+      documentFile.setObjectType(DocumentObjectObjectType.FILE);
+      documentFile = documentFilePersistence.save(documentFile);
     }
 
     if (documentFile.getObjectType() != DocumentObjectObjectType.FILE) {
@@ -231,6 +239,70 @@ public class DocumentFileServiceImpl
     }
   }
 
+  @Override
+  public InputStream loadVersion(DocumentFileDTO documentFile, Long versionId) throws ServiceException {
+    Long documentFileId = requireDocumentFileId(documentFile);
+
+    if (versionId == null) {
+      throw new ServiceException("A document file version ID is required to load content.");
+    }
+
+    DocumentFileVersionEntity version = documentFileVersionPersistence.findById(versionId)
+      .orElseThrow(() -> new ServiceException("Document file version not found: " + versionId));
+
+    if (version.getDocumentFile() == null || version.getDocumentFile().getId() == null
+      || !documentFileId.equals(version.getDocumentFile().getId())) {
+      throw new ServiceException("Document file version " + versionId + " does not belong to the requested file.");
+    }
+
+    Path versionPath = getLibraryPath(documentFile).resolve(versionId.toString());
+
+    if (!Files.isRegularFile(versionPath)) {
+      throw new ServiceException("The stored document file version does not exist: " + versionPath);
+    }
+
+    try {
+      return Files.newInputStream(versionPath);
+    }
+    catch (IOException | SecurityException exception) {
+      throw new ServiceException("Unable to load document file version: " + versionPath, exception);
+    }
+  }
+
+  @Override
+  public void delete(DocumentFileDTO documentFile) throws ServiceException {
+    Long documentFileId = requireDocumentFileId(documentFile);
+    Path filePath = getLibraryPath(documentFile);
+    List<DocumentFileVersionEntity> versions = documentFileVersionPersistence.findByDocumentFileId(documentFileId);
+
+    try {
+      if (Files.exists(filePath)) {
+        try (var paths = Files.walk(filePath)) {
+          paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+            try {
+              Files.delete(path);
+            }
+            catch (IOException exception) {
+              throw new FileDeletionException(exception);
+            }
+          });
+        }
+      }
+
+      documentFileVersionPersistence.deleteAll(versions);
+      super.delete(documentFileId);
+    }
+    catch (IOException | SecurityException exception) {
+      throw new ServiceException("Unable to delete document file directory: " + filePath, exception);
+    }
+    catch (FileDeletionException exception) {
+      throw new ServiceException(
+        "Unable to delete document file directory: " + filePath,
+        (IOException) exception.getCause()
+      );
+    }
+  }
+
   private Long requireDocumentFileId(DocumentFileDTO documentFile) throws ServiceException {
     if (documentFile == null || documentFile.getId() == null) {
       String message = "A persisted DocumentFileDTO with an ID is required to load content.";
@@ -295,6 +367,8 @@ public class DocumentFileServiceImpl
       .orElseThrow(() -> missingLibrary(documentFile.getLibrary().getId()));
     DocumentFileEntity entity = toEntity(documentFile);
 
+    documentFile.setObjectType(DocumentObjectObjectType.FILE);
+    entity.setObjectType(DocumentObjectObjectType.FILE);
     entity.setLibrary(library);
 
     if (documentFile.getParentFolder() != null) {
@@ -436,6 +510,12 @@ public class DocumentFileServiceImpl
       }
 
       documentFile.setParentFolder(parentFolder);
+    }
+  }
+
+  private static final class FileDeletionException extends RuntimeException {
+    private FileDeletionException(IOException cause) {
+      super(cause);
     }
   }
 }

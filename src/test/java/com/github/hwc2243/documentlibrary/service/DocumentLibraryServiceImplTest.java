@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
 import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentLibraryPersistence;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -196,6 +197,28 @@ class DocumentLibraryServiceImplTest {
     DocumentLibraryDTO documentLibrary = service.fetchByName("missing");
 
     assertEquals(null, documentLibrary);
+  }
+
+  @Test
+  void deleteReportsLibraryNameWhenLibraryIsNotEmpty() {
+    DocumentLibraryDTO library = new DocumentLibraryDTO();
+    library.setId(42L);
+    library.setName("Operations documents");
+    DocumentLibraryServiceImpl service = new DocumentLibraryServiceImpl();
+    service.documentFolderPersistence = (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          return java.util.List.of(new com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity());
+        }
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+
+    ServiceException exception = assertThrows(ServiceException.class, () -> service.delete(library));
+
+    assertTrue(exception.getMessage().contains("Operations documents"));
   }
 
   private static final class TestDocumentLibraryService extends DocumentLibraryServiceImpl {

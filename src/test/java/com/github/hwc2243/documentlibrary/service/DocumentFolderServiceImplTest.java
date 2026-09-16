@@ -10,6 +10,7 @@ import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFilePersistence;
 import com.github.hwc2243.documentlibrary.persistence.DocumentLibraryPersistence;
 import com.github.hwc2243.documentlibrary.persistence.base.BaseDocumentFolderPersistence;
 import java.lang.reflect.Proxy;
@@ -120,6 +121,7 @@ class DocumentFolderServiceImplTest {
     assertEquals(persistedFolder, createdFolder);
     assertEquals(30L, requestedFolder.getId());
     assertEquals(documentFolderEntity, savedEntity[0]);
+    assertEquals(DocumentObjectObjectType.FOLDER, savedEntity[0].getObjectType());
     assertEquals(documentLibraryEntity, savedEntity[0].getLibrary());
     assertEquals(parentFolderEntity, savedEntity[0].getParentFolder());
     assertTrue(Files.isDirectory(temporaryDirectory.resolve("10/20/30")));
@@ -252,6 +254,83 @@ class DocumentFolderServiceImplTest {
     );
 
     assertTrue(exception.getMessage().contains("does not belong"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void deleteRemovesResidualFilesystemEntriesAfterCheckingDatabaseIsEmpty() throws Exception {
+    DocumentLibraryDTO library = documentLibrary(10L);
+    DocumentFolderDTO folder = folder(20L, library, null);
+    Path folderPath = temporaryDirectory.resolve("10/20");
+    Files.createDirectories(folderPath.resolve("residual"));
+    Files.writeString(folderPath.resolve("residual/interrupted-upload"), "orphaned data");
+    boolean[] deleted = new boolean[1];
+    DocumentFolderEntity folderEntity = new DocumentFolderEntity();
+    DocumentFolderPersistence folderPersistence = (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          return List.of();
+        }
+        if (method.getName().equals("findById")) {
+          return Optional.of(folderEntity);
+        }
+        if (method.getName().equals("deleteById")) {
+          deleted[0] = true;
+          return null;
+        }
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+    DocumentFilePersistence filePersistence = (DocumentFilePersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFilePersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          return List.of();
+        }
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+    DocumentFolderServiceImpl service = new TestDocumentFolderService(folderEntity, folder);
+    service.documentLibraryService = documentLibraryService();
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence);
+    ReflectionTestUtils.setField(service, "baseDocumentFolderPersistence", folderPersistence);
+    service.documentFilePersistence = filePersistence;
+
+    service.delete(folder.getId());
+
+    assertTrue(deleted[0]);
+    assertTrue(Files.notExists(folderPath));
+  }
+
+  @Test
+  void deleteReportsFolderNameWhenFolderIsNotEmpty() {
+    DocumentLibraryDTO library = documentLibrary(10L);
+    DocumentFolderDTO folder = folder(20L, library, null);
+    folder.setName("Financial reports");
+    DocumentFolderEntity folderEntity = new DocumentFolderEntity();
+    DocumentFolderPersistence folderPersistence = (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findById")) {
+          return Optional.of(folderEntity);
+        }
+        if (method.getName().equals("findByLibraryIdAndParentFolderId")) {
+          return List.of(new DocumentFolderEntity());
+        }
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+    DocumentFolderServiceImpl service = new TestDocumentFolderService(folderEntity, folder);
+    ReflectionTestUtils.setField(service, "documentFolderPersistence", folderPersistence);
+    ReflectionTestUtils.setField(service, "baseDocumentFolderPersistence", folderPersistence);
+
+    ServiceException exception = assertThrows(ServiceException.class, () -> service.delete(folder.getId()));
+
+    assertTrue(exception.getMessage().contains("Financial reports"));
   }
 
   private DocumentFolderPersistence folderPersistence(DocumentFolderEntity entity) {

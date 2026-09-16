@@ -20,6 +20,7 @@ public abstract class BaseDocumentLibraryServiceImpl<D extends DocumentLibraryDT
   @Autowired
   protected DocumentLibraryPersistence documentLibraryPersistence;
 
+
     @Override
   public D create (D dto) throws ServiceException
   {

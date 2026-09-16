@@ -2,6 +2,8 @@ package com.github.hwc2243.documentlibrary.service;
 
 import com.github.hwc2243.documentlibrary.dto.DocumentLibraryDTO;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFilePersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFolderPersistence;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentLibraryServiceImpl;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -27,6 +29,12 @@ public class DocumentLibraryServiceImpl
   
   @Autowired
   protected DocumentLibraryMapper documentLibraryMapper;
+
+  @Autowired
+  protected DocumentFolderPersistence documentFolderPersistence;
+
+  @Autowired
+  protected DocumentFilePersistence documentFilePersistence;
 
   @PostConstruct
   protected void validateDocumentLibraryPath() {
@@ -92,6 +100,36 @@ public class DocumentLibraryServiceImpl
     }
 
     return persistedDocumentLibrary;
+  }
+
+  @Override
+  public void delete(DocumentLibraryDTO documentLibrary) throws ServiceException {
+    if (documentLibrary == null || documentLibrary.getId() == null) {
+      throw new ServiceException("A persisted DocumentLibraryDTO with an ID is required to delete a library.");
+    }
+
+    Long libraryId = documentLibrary.getId();
+
+    if (!documentFolderPersistence.findByLibraryIdAndParentFolderId(libraryId, null).isEmpty()
+      || !documentFilePersistence.findByLibraryIdAndParentFolderId(libraryId, null).isEmpty()) {
+      throw new ServiceException(
+        "Document library '" + documentLibrary.getName() + "' cannot be deleted because it is not empty."
+      );
+    }
+
+    Path libraryPath = getLibraryPath(documentLibrary);
+
+    try {
+      Files.deleteIfExists(libraryPath);
+      super.delete(libraryId);
+    }
+    catch (IOException | SecurityException exception) {
+      String message = "Unable to delete the document library directory: " + libraryPath;
+
+      logger.error(message, exception);
+
+      throw new ServiceException(message, exception);
+    }
   }
 
   protected DocumentLibraryEntity toEntity (DocumentLibraryDTO dto) {

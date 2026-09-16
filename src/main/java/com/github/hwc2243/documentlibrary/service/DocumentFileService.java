@@ -21,4 +21,8 @@ public interface DocumentFileService extends BaseDocumentFileService<DocumentFil
   DocumentFileVersionDTO store(DocumentFileDTO documentFile, InputStream content) throws ServiceException;
 
   InputStream load(DocumentFileDTO documentFile) throws ServiceException;
+
+  InputStream loadVersion(DocumentFileDTO documentFile, Long versionId) throws ServiceException;
+
+  void delete(DocumentFileDTO documentFile) throws ServiceException;
 }

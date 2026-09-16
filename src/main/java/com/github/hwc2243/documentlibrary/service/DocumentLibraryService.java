@@ -7,4 +7,6 @@ import java.nio.file.Path;
 public interface DocumentLibraryService extends BaseDocumentLibraryService<DocumentLibraryDTO,Long>
 {
   Path getLibraryPath(DocumentLibraryDTO documentLibrary) throws ServiceException;
+
+  void delete(DocumentLibraryDTO documentLibrary) throws ServiceException;
 }

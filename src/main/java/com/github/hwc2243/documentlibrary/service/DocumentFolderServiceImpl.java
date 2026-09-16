@@ -6,16 +6,20 @@ import com.github.hwc2243.documentlibrary.entity.DocumentFolderEntity;
 import com.github.hwc2243.documentlibrary.entity.DocumentLibraryEntity;
 import com.github.hwc2243.documentlibrary.model.DocumentObjectObjectType;
 import com.github.hwc2243.documentlibrary.persistence.DocumentLibraryPersistence;
+import com.github.hwc2243.documentlibrary.persistence.DocumentFilePersistence;
 import com.github.hwc2243.documentlibrary.service.base.BaseDocumentFolderServiceImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +42,9 @@ public class DocumentFolderServiceImpl
   @Autowired
   protected DocumentLibraryPersistence documentLibraryPersistence;
 
+  @Autowired
+  protected DocumentFilePersistence documentFilePersistence;
+
   @Override
   public DocumentFolderDTO fetchByName(
     String name,
@@ -55,6 +62,13 @@ public class DocumentFolderServiceImpl
 
     if (documentFolder == null) {
       return null;
+    }
+
+    if (documentFolder.getObjectType() == null) {
+      // Folders created before the object-type value was assigned are valid
+      // folder rows; repair that legacy value when they are encountered.
+      documentFolder.setObjectType(DocumentObjectObjectType.FOLDER);
+      documentFolder = documentFolderPersistence.save(documentFolder);
     }
 
     if (documentFolder.getObjectType() != DocumentObjectObjectType.FOLDER) {
@@ -221,6 +235,66 @@ public class DocumentFolderServiceImpl
   public DocumentFolderDTO update(DocumentFolderDTO documentFolder) throws ServiceException {
     return persist(documentFolder);
   }
+  
+  @Override
+  public void delete (DocumentFolderDTO folder) throws ServiceException {
+	  delete(folder.getId());
+  }
+
+  @Override
+  public void delete(Long folderId) throws ServiceException {
+    if (folderId == null) {
+      throw new ServiceException("A document folder ID is required to delete a folder.");
+    }
+
+    DocumentFolderDTO documentFolder = get(folderId);
+
+    if (documentFolder == null || documentFolder.getLibrary() == null || documentFolder.getLibrary().getId() == null) {
+      throw new ServiceException("A persisted DocumentFolderDTO with a library is required to delete a folder.");
+    }
+
+    Long libraryId = documentFolder.getLibrary().getId();
+
+    if (!documentFolderPersistence.findByLibraryIdAndParentFolderId(libraryId, folderId).isEmpty()
+      || !documentFilePersistence.findByLibraryIdAndParentFolderId(libraryId, folderId).isEmpty()) {
+      throw new ServiceException(
+        "Document folder '" + documentFolder.getName() + "' cannot be deleted because it is not empty."
+      );
+    }
+
+    Path folderPath = getLibraryPath(documentFolder);
+
+    try {
+      deleteDirectory(folderPath);
+      super.delete(folderId);
+    }
+    catch (IOException | SecurityException exception) {
+      String message = "Unable to delete the document folder directory: " + folderPath;
+
+      logger.error(message, exception);
+
+      throw new ServiceException(message, exception);
+    }
+  }
+
+  /**
+   * A folder is deleted only after its database children and files have been
+   * checked. Remove any residual filesystem entries as well, such as entries
+   * left by an interrupted earlier operation, so they do not block deletion.
+   */
+  private void deleteDirectory(Path folderPath) throws IOException {
+    if (!Files.exists(folderPath)) {
+      return;
+    }
+
+    try (Stream<Path> paths = Files.walk(folderPath)) {
+      List<Path> entries = paths.sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+
+      for (Path entry : entries) {
+        Files.deleteIfExists(entry);
+      }
+    }
+  }
 
   private DocumentFolderDTO persist(DocumentFolderDTO documentFolder) throws ServiceException {
     if (documentFolder == null || documentFolder.getLibrary() == null
@@ -237,6 +311,8 @@ public class DocumentFolderServiceImpl
       .orElseThrow(() -> missingLibrary(documentFolder.getLibrary().getId()));
     DocumentFolderEntity entity = toEntity(documentFolder);
 
+    documentFolder.setObjectType(DocumentObjectObjectType.FOLDER);
+    entity.setObjectType(DocumentObjectObjectType.FOLDER);
     entity.setLibrary(library);
 
     if (documentFolder.getParentFolder() != null) {
