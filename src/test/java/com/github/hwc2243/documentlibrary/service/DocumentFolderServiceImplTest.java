@@ -17,6 +17,7 @@ import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,15 +29,23 @@ class DocumentFolderServiceImplTest {
   Path temporaryDirectory;
 
   @Test
-  void getLibraryPathBuildsHierarchyFromParentFolders() throws ServiceException {
+  void getLibraryPathLoadsFullHierarchyFromPersistenceForShallowFolderDto() throws ServiceException {
     DocumentLibraryDTO documentLibrary = documentLibrary(10L);
-    DocumentFolderDTO rootFolder = folder(20L, documentLibrary, null);
-    DocumentFolderDTO childFolder = folder(30L, documentLibrary, rootFolder);
-    DocumentFolderDTO grandchildFolder = folder(40L, documentLibrary, childFolder);
+    DocumentLibraryEntity libraryEntity = new DocumentLibraryEntity();
+    libraryEntity.setId(10L);
+    DocumentFolderEntity rootFolder = folderEntity(20L, libraryEntity, null);
+    DocumentFolderEntity childFolder = folderEntity(30L, libraryEntity, rootFolder);
+    DocumentFolderEntity grandchildFolder = folderEntity(40L, libraryEntity, childFolder);
+    DocumentFolderDTO shallowFolder = folder(40L, documentLibrary, null);
     DocumentFolderServiceImpl service = new DocumentFolderServiceImpl();
     service.documentLibraryService = documentLibraryService();
+    ReflectionTestUtils.setField(
+      service,
+      "documentFolderPersistence",
+      foldersByIdPersistence(Map.of(20L, rootFolder, 30L, childFolder, 40L, grandchildFolder))
+    );
 
-    Path folderPath = service.getLibraryPath(grandchildFolder);
+    Path folderPath = service.getLibraryPath(shallowFolder);
 
     assertEquals(temporaryDirectory.resolve("10/20/30/40"), folderPath);
   }
@@ -86,6 +95,9 @@ class DocumentFolderServiceImplTest {
     DocumentFolderEntity parentFolderEntity = new DocumentFolderEntity();
     parentFolderEntity.setId(20L);
     parentFolderEntity.setLibrary(documentLibraryEntity);
+    documentFolderEntity.setId(30L);
+    documentFolderEntity.setLibrary(documentLibraryEntity);
+    documentFolderEntity.setParentFolder(parentFolderEntity);
     service.documentLibraryService = documentLibraryService();
     service.documentLibraryPersistence = (DocumentLibraryPersistence) Proxy.newProxyInstance(
       getClass().getClassLoader(),
@@ -103,7 +115,8 @@ class DocumentFolderServiceImplTest {
       new Class<?>[] { DocumentFolderPersistence.class },
       (proxy, method, arguments) -> {
         if (method.getName().equals("findById")) {
-          return Optional.of(parentFolderEntity);
+          Long folderId = (Long) arguments[0];
+          return Optional.of(folderId.equals(30L) ? documentFolderEntity : parentFolderEntity);
         }
 
         if (method.getName().equals("save")) {
@@ -266,6 +279,10 @@ class DocumentFolderServiceImplTest {
     Files.writeString(folderPath.resolve("residual/interrupted-upload"), "orphaned data");
     boolean[] deleted = new boolean[1];
     DocumentFolderEntity folderEntity = new DocumentFolderEntity();
+    DocumentLibraryEntity libraryEntity = new DocumentLibraryEntity();
+    libraryEntity.setId(10L);
+    folderEntity.setId(20L);
+    folderEntity.setLibrary(libraryEntity);
     DocumentFolderPersistence folderPersistence = (DocumentFolderPersistence) Proxy.newProxyInstance(
       getClass().getClassLoader(),
       new Class<?>[] { DocumentFolderPersistence.class },
@@ -366,6 +383,20 @@ class DocumentFolderServiceImplTest {
     );
   }
 
+  private DocumentFolderPersistence foldersByIdPersistence(Map<Long, DocumentFolderEntity> folders) {
+    return (DocumentFolderPersistence) Proxy.newProxyInstance(
+      getClass().getClassLoader(),
+      new Class<?>[] { DocumentFolderPersistence.class },
+      (proxy, method, arguments) -> {
+        if (method.getName().equals("findById")) {
+          return Optional.ofNullable(folders.get((Long) arguments[0]));
+        }
+
+        throw new UnsupportedOperationException(method.getName());
+      }
+    );
+  }
+
   private DocumentLibraryService documentLibraryService() {
     return (DocumentLibraryService) Proxy.newProxyInstance(
       getClass().getClassLoader(),
@@ -395,6 +426,18 @@ class DocumentFolderServiceImplTest {
     DocumentFolderDTO documentFolder = new DocumentFolderDTO();
     documentFolder.setId(id);
     documentFolder.setLibrary(documentLibrary);
+    documentFolder.setParentFolder(parentFolder);
+    return documentFolder;
+  }
+
+  private static DocumentFolderEntity folderEntity(
+    Long id,
+    DocumentLibraryEntity library,
+    DocumentFolderEntity parentFolder
+  ) {
+    DocumentFolderEntity documentFolder = new DocumentFolderEntity();
+    documentFolder.setId(id);
+    documentFolder.setLibrary(library);
     documentFolder.setParentFolder(parentFolder);
     return documentFolder;
   }

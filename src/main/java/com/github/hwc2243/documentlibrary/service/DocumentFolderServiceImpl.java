@@ -167,28 +167,13 @@ public class DocumentFolderServiceImpl
       throw new ServiceException(message);
     }
 
-    if (documentFolder.getLibrary() == null) {
-      String message = "A DocumentLibraryDTO is required to determine a document folder path.";
-
-      logger.error(message);
-
-      throw new ServiceException(message);
-    }
-
     Deque<Long> folderIds = new ArrayDeque<>();
     Set<Long> visitedFolderIds = new HashSet<>();
-    DocumentFolderDTO currentFolder = documentFolder;
+    Long currentFolderId = documentFolder.getId();
+    Long libraryId = null;
 
-    while (currentFolder != null) {
-      Long folderId = currentFolder.getId();
-
-      if (folderId == null) {
-        String message = "Each parent DocumentFolderDTO must have an ID to determine a document folder path.";
-
-        logger.error(message);
-
-        throw new ServiceException(message);
-      }
+    while (currentFolderId != null) {
+      Long folderId = currentFolderId;
 
       if (!visitedFolderIds.add(folderId)) {
         String message = "A cycle was found in the document folder hierarchy.";
@@ -199,10 +184,38 @@ public class DocumentFolderServiceImpl
       }
 
       folderIds.addFirst(folderId);
-      currentFolder = currentFolder.getParentFolder();
+      DocumentFolderEntity currentFolder = documentFolderPersistence.findById(folderId)
+        .orElseThrow(() -> missingFolder(folderId));
+
+      if (currentFolder.getLibrary() == null || currentFolder.getLibrary().getId() == null) {
+        String message = "Document folder " + folderId + " does not belong to a persisted document library.";
+
+        logger.error(message);
+
+        throw new ServiceException(message);
+      }
+
+      Long currentLibraryId = currentFolder.getLibrary().getId();
+
+      if (libraryId == null) {
+        libraryId = currentLibraryId;
+      }
+      else if (!libraryId.equals(currentLibraryId)) {
+        String message = "All folders in a document folder hierarchy must belong to the same document library.";
+
+        logger.error(message);
+
+        throw new ServiceException(message);
+      }
+
+      currentFolderId = currentFolder.getParentFolder() == null
+        ? null
+        : currentFolder.getParentFolder().getId();
     }
 
-    Path folderPath = documentLibraryService.getLibraryPath(documentFolder.getLibrary());
+    DocumentLibraryDTO library = new DocumentLibraryDTO();
+    library.setId(libraryId);
+    Path folderPath = documentLibraryService.getLibraryPath(library);
 
     for (Long folderId : folderIds) {
       folderPath = folderPath.resolve(folderId.toString());
@@ -358,6 +371,14 @@ public class DocumentFolderServiceImpl
 
   private ServiceException missingParentFolder(Long parentFolderId) {
     String message = "Parent document folder not found: " + parentFolderId;
+
+    logger.error(message);
+
+    return new ServiceException(message);
+  }
+
+  private ServiceException missingFolder(Long folderId) {
+    String message = "Document folder not found: " + folderId;
 
     logger.error(message);
 
